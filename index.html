@@ -13,7 +13,9 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:"Zen Kurenaido","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;line-height:1.5}
 main{max-width:640px;margin:0 auto;padding:10px 12px 24px}
 h1{font-size:22px;margin:4px 0 6px;font-weight:400}
-canvas{width:100%;height:auto;display:block;touch-action:none}
+canvas{width:100%;height:auto;display:block;touch-action:none;transform-origin:center}
+#boardWrap{overflow:hidden}
+#boardWrap.flipped canvas{transform:rotate(180deg)}
 .row{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
 .row label{flex:1 1 100%;display:flex;align-items:center;gap:8px;font-size:15px}
 input[type=range]{flex:1;accent-color:var(--acc)}
@@ -27,16 +29,33 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #fx{min-height:1.4em;font-size:14px}
 #next,#regen{display:none}
 .help{font-size:13px;opacity:.8;margin-top:8px}
-.online{border:1px solid var(--grid);padding:8px;border-radius:6px;margin:8px 0}
-.online h2{font-size:16px;margin:0 0 6px;font-weight:400}
-.online .small{font-size:12px;opacity:.8}
-#onlineStatus.err{color:var(--acc)}
+.duel{border:1px solid var(--grid);padding:8px;border-radius:6px;margin:8px 0}
+.duel h2{font-size:16px;margin:0 0 6px;font-weight:400}
+.duel .small{font-size:12px;opacity:.8}
+.duel-panel{border:1px solid var(--grid);padding:6px;border-radius:4px}
+.duel-panel.top{transform:rotate(180deg);margin-bottom:8px}
+.duel-panel.active{border-color:var(--acc)}
+.duel-panel .row{margin:4px 0}
+.duel-panel input[type=range]{min-width:0}
+#localStatus.err{color:var(--acc)}
 </style>
 </head>
 <body>
 <main>
 <h1>力学的ブロック崩し</h1>
-<canvas id="c"></canvas>
+<section class="duel">
+<h2>同じ端末で2人対戦</h2>
+<div class="row"><label>下側プレイヤー <input id="bottomName" type="text" maxlength="20" value="Player 1"></label></div>
+<div class="row"><label>上側プレイヤー <input id="topName" type="text" maxlength="20" value="Player 2"></label></div>
+<button class="go" id="startLocal">対戦開始</button>
+<div id="localStatus" class="small">1人用モード</div>
+</section>
+<div id="duelTop" class="duel-panel top">
+<b id="topLabel">上側 Player 2</b>
+<div class="row"><label>角度θ <input id="topAngle" type="range" min="-180" max="180" step="1" value="60"><b id="topAv" style="min-width:3.5em"></b></label></div>
+<div class="row"><button class="go" id="topFire">上側 発射</button><button id="topStop">止める</button></div>
+</div>
+<div id="boardWrap"><canvas id="c"></canvas></div>
 <div id="msg"></div>
 <div id="fx"></div>
 <div class="info" id="info"></div>
@@ -50,23 +69,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 <button class="go" id="next">次へ</button>
 <button id="regen">フィールドを更新</button>
 </div>
-<section class="online">
-<h2>オンライン対戦（試験版）</h2>
-<div class="row"><label>名前 <input id="playerName" type="text" maxlength="20" value="Player"></label></div>
-<div class="row"><label>WS URL <input id="wsUrl" type="text" placeholder="ws://localhost:8080"></label></div>
-<div class="row">
-<button id="connectWs">接続</button>
-<button id="disconnectWs">切断</button>
-</div>
-<div class="row">
-<button id="createRoom">ルーム作成</button>
-<label>ルームID <input id="roomId" type="text" maxlength="10" placeholder="例: A1B2C3"></label>
-<button id="joinRoom">参加</button>
-</div>
-<div id="onlineStatus" class="small">未接続</div>
-<div id="onlinePlayers" class="small"></div>
+<section id="duelBottom" class="duel-panel">
+<b id="bottomLabel">下側 Player 1</b>
 </section>
-<div class="help">盤面タップで発射位置、ドラッグで角度。初速は 2.5g 固定。球が止まったら「止める」で1発を終わらせます。壁の線が太いほど反発係数が大きく、点線の床は「なし」(落ちると球が消える)です。</div>
+<div class="help">盤面タップで発射位置、ドラッグで角度。初速は 2.5g 固定。球が止まったら「止める」で1発を終わらせます。対戦中は下側、上側の順に同じ盤面へ挑戦します。上側の番は盤面と操作が上下反転します。</div>
 </main>
 <script>
 const g=9.8,R=1,ML=38,MT=10,MB=30,MR=10,FW=557,CW=ML+FW+MR,CH=MT+FW+MB,DT=1/480,V0=2.5*g,VMAX=300;
@@ -75,108 +81,57 @@ const TOAST=['反発係数2のブロックが出現!','球が真二つに分離!
 const cv=document.getElementById('c'),ctx=cv.getContext('2d'),$=id=>document.getElementById(id);
 const dpr=Math.min(window.devicePixelRatio||1,3);cv.width=CW*dpr;cv.height=CH*dpr;
 let N,W,H,S,wl,L=1,seed=1,blocks=[],balls=[],trail=[],shots=0,lim=2,lvT=0,totT=0,totS=0,sumS=0,sumL=0,state='aim',ballType=0,dUses=0,aim={x:0,y:0},mult=1,stillT=0,failStreak=0,fx={},toast='',toastAt=0,lastGrade='-',cols,rows;
-const onlineState={ws:null,connected:false,roomId:'',playerId:'',active:false,resultSent:false,players:[],myName:'Player'};
+const localState={active:false,turn:0,names:['Player 1','Player 2'],results:[null,null],seed:1};
+let viewFlipped=false;
 const tx=x=>ML+x*S,ty=y=>MT+(H-y)*S;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const gradeOf=r=>r<=.5?'S':r<=.6?'A':r<=.7?'B':r<=.8?'C':r<=.9?'D':r<1?'E':'F';
-function defaultWsUrl(){
-  const host=location.hostname;
-  if(!host||host==='localhost'||host==='127.0.0.1')return 'ws://localhost:8080';
-  if(host.endsWith('.github.io'))return '';
-  const p=location.protocol==='https:'?'wss:':'ws:';
-  return p+'//'+location.host;
-}
-function isGitHubPages(){
-  return location.hostname.endsWith('.github.io');
-}
-function onlineStatus(msg,err=false){
-  const el=$('onlineStatus');
+function localStatus(msg,err=false){
+  const el=$('localStatus');
   el.textContent=msg;
   el.className='small'+(err?' err':'');
 }
-function onlinePlayers(){
-  const names=onlineState.players.map(p=>{
-    const me=p.id===onlineState.playerId?'(あなた)':'';
-    return p.name+me;
-  });
-  $('onlinePlayers').textContent=names.length?'参加者: '+names.join(' / '):'';
+function updateDuelPanels(){
+  const active=localState.active;
+  $('duelTop').classList.toggle('active',active&&localState.turn===1);
+  $('duelBottom').classList.toggle('active',active&&localState.turn===0);
+  $('topLabel').textContent='上側 '+localState.names[1];
+  $('bottomLabel').textContent='下側 '+localState.names[0];
+  $('boardWrap').classList.toggle('flipped',viewFlipped);
+  $('topAv').textContent=$('topAngle').value+'°';
 }
-function onlineSend(type,data={}){
-  if(!onlineState.connected||!onlineState.ws||onlineState.ws.readyState!==1)return false;
-  onlineState.ws.send(JSON.stringify({type,...data}));
+function beginLocalTurn(){
+  viewFlipped=localState.turn===1;
+  failStreak=0;L=1;seed=localState.seed;totT=0;totS=0;sumS=0;sumL=0;lastGrade='-';dUses=0;ballType=0;
+  setup();
+  $('msg').textContent=localState.names[localState.turn]+' の番';
+  localStatus((localState.turn===1?'上側':'下側')+'の画面を操作してください');
+  updateDuelPanels();
+}
+function startLocalMatch(){
+  localState.names=[
+    ($('bottomName').value||'Player 1').trim().slice(0,20)||'Player 1',
+    ($('topName').value||'Player 2').trim().slice(0,20)||'Player 2'
+  ];
+  localState.active=true;localState.turn=0;localState.results=[null,null];localState.seed=Math.floor(Math.random()*1e6);
+  beginLocalTurn();
+}
+function finishLocalTurn(ok){
+  localState.results[localState.turn]={ok,time:lvT,shots};
+  const completed=localState.turn;
+  if(completed===0){
+    localState.turn=1;
+    beginLocalTurn();
+    return true;
+  }
+  localState.active=false;state='all';viewFlipped=false;updateDuelPanels();
+  const a=localState.results[0],b=localState.results[1];
+  const rank=r=>r.ok?0:1;
+  const winner=rank(a)!==rank(b)?(rank(a)<rank(b)?0:1):(a.time!==b.time?(a.time<b.time?0:1):(a.shots<=b.shots?0:1));
+  $('msg').textContent=localState.names[winner]+' の勝ち！ '+localState.names[0]+' '+(a.ok?'クリア':'失敗')+' '+a.time.toFixed(1)+'秒 / '+localState.names[1]+' '+(b.ok?'クリア':'失敗')+' '+b.time.toFixed(1)+'秒';
+  localStatus('対戦終了。もう一度「対戦開始」で再戦できます');
   return true;
-}
-function resetForMatch(matchSeed,level=1){
-  failStreak=0;L=level;seed=matchSeed;totT=0;totS=0;sumS=0;sumL=0;lastGrade='-';dUses=0;ballType=0;setup();
-  onlineState.active=true;onlineState.resultSent=false;
-  $('msg').textContent='対戦開始！ 先にクリアした方が勝ちです。';
-}
-function applyMatchResult(data){
-  onlineState.active=false;
-  const me=data.results.find(r=>r.playerId===onlineState.playerId);
-  const winner=data.results.find(r=>r.playerId===data.winnerId);
-  if(!me||!winner){onlineStatus('対戦結果を受信しました');return}
-  const winText=winner.playerId===onlineState.playerId?'あなたの勝ち！':'あなたの負け…';
-  const myLine='あなた: '+(me.cleared?'クリア':'失敗')+' '+me.time.toFixed(2)+'秒 '+me.shots+'手';
-  const op=data.results.find(r=>r.playerId!==onlineState.playerId);
-  const opLine=op?('相手('+op.name+'): '+(op.cleared?'クリア':'失敗')+' '+op.time.toFixed(2)+'秒 '+op.shots+'手'):'';
-  $('msg').textContent=winText+' '+myLine+(opLine?' / '+opLine:'');
-}
-function connectOnline(){
-  const url=($('wsUrl').value||'').trim()||defaultWsUrl();
-  if(!url){
-    onlineStatus(isGitHubPages()?'GitHub PagesではWSサーバーURLを入力してください':'WSサーバーURLを入力してください',true);
-    return;
-  }
-  if(location.protocol==='https:'&&/^ws:\/\//i.test(url)){
-    onlineStatus('HTTPSのページではwss:// URLを使用してください',true);
-    return;
-  }
-  $('wsUrl').value=url;
-  if(onlineState.ws&&onlineState.ws.readyState<=1)onlineState.ws.close();
-  let ws;
-  try{
-    ws=new WebSocket(url);
-  }catch{
-    onlineStatus('WS URLが正しくありません',true);
-    return;
-  }
-  onlineState.ws=ws;
-  onlineStatus('接続中…');
-  ws.onopen=()=>{
-    onlineState.connected=true;
-    onlineState.myName=($('playerName').value||'Player').trim().slice(0,20)||'Player';
-    onlineStatus('接続成功');
-  };
-  ws.onclose=()=>{
-    onlineState.connected=false;
-    onlineState.roomId='';
-    onlineState.players=[];
-    onlineState.active=false;
-    onlinePlayers();
-    onlineStatus('切断されました',true);
-  };
-  ws.onerror=()=>onlineStatus('接続エラー',true);
-  ws.onmessage=e=>{
-    let m;
-    try{m=JSON.parse(e.data)}catch{return}
-    if(m.type==='welcome'){onlineState.playerId=m.playerId;onlineStatus('接続済み: '+m.playerId)}
-    else if(m.type==='room_update'){
-      onlineState.roomId=m.roomId||'';
-      onlineState.players=Array.isArray(m.players)?m.players:[];
-      $('roomId').value=onlineState.roomId;
-      onlinePlayers();
-      onlineStatus('ルーム '+onlineState.roomId+' に参加中');
-    }else if(m.type==='match_start'){
-      onlineStatus('対戦開始: シード '+m.seed);
-      resetForMatch(m.seed,m.level||1);
-    }else if(m.type==='match_result'){
-      applyMatchResult(m);
-    }else if(m.type==='error'){
-      onlineStatus(m.message||'エラー',true);
-    }
-  };
 }
 function setup(){
   N=6+Math.floor((L-1)/2);W=H=N*g;S=FW/W;
@@ -291,16 +246,7 @@ function endShot(why){
 function finish(ok){
   sumS+=shots;sumL+=lim;failStreak=ok?0:failStreak+1;
   lastGrade=ok?gradeOf(shots/lim):'F';
-  if(onlineState.active){
-    if(!onlineState.resultSent){
-      onlineSend('submit_result',{roomId:onlineState.roomId,cleared:!!ok,time:lvT,shots});
-      onlineState.resultSent=true;
-    }
-    state='matchwait';
-    $('msg').textContent=(ok?'クリア！':'失敗…')+' 相手の結果待ち…';
-    $('next').style.display='none';$('regen').style.display='none';
-    return;
-  }
+  if(localState.active){finishLocalTurn(ok);return}
   const cum=gradeOf(sumS/sumL);
   if(ok){
     state=L>=99?'all':'clear';
@@ -422,9 +368,21 @@ function syncUI(){
   const infoEl=$('info');
   infoEl.textContent='';
   for(const s of info){const span=document.createElement('span');span.textContent=s;infoEl.appendChild(span)}
-  $('fire').disabled=state!=='aim'||insideBlock(aim.x,aim.y);
+  const lowerTurn=!localState.active||localState.turn===0;
+  const upperTurn=localState.active&&localState.turn===1;
+  $('fire').disabled=!lowerTurn||state!=='aim'||insideBlock(aim.x,aim.y);
+  $('topFire').disabled=!upperTurn||state!=='aim'||insideBlock(aim.x,aim.y);
+  $('stop').disabled=!lowerTurn||state!=='fly';
+  $('topStop').disabled=!upperTurn||state!=='fly';
+  $('sa').disabled=!lowerTurn;
+  $('topAngle').disabled=!upperTurn;
 }
-function toField(e){const r=cv.getBoundingClientRect(),k=CW/r.width;return{x:((e.clientX-r.left)*k-ML)/S,y:H-((e.clientY-r.top)*k-MT)/S}}
+function toField(e){
+  const r=cv.getBoundingClientRect(),k=CW/r.width;
+  let px=(e.clientX-r.left)*k,py=(e.clientY-r.top)*k;
+  if(viewFlipped){px=CW-px;py=CH-py}
+  return{x:(px-ML)/S,y:H-(py-MT)/S}
+}
 let dragging=false;
 cv.addEventListener('pointerdown',e=>{
   if(state!=='aim')return;
@@ -442,6 +400,10 @@ cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',end
 $('sa').oninput=syncUI;$('fire').onclick=fire;
 $('stop').onclick=()=>{if(state==='fly')endShot('')};
 $('fast').onclick=()=>{mult=mult===1?3:mult===3?10:1;$('fast').textContent='倍速 ×'+mult};
+$('topAngle').oninput=()=>{$('sa').value=$('topAngle').value;syncUI()};
+$('topFire').onclick=fire;
+$('topStop').onclick=()=>{if(state==='fly')endShot('')};
+$('startLocal').onclick=startLocalMatch;
 function fullReset(){failStreak=0;L=1;seed=Math.floor(Math.random()*1e6);totT=0;totS=0;sumS=0;sumL=0;lastGrade='-';dUses=0;ballType=0;setup()}
 $('reset').onclick=fullReset;
 $('regen').onclick=()=>{failStreak=0;seed=Math.floor(Math.random()*1e6);setup()};
@@ -450,21 +412,7 @@ $('next').onclick=()=>{
   else if(state==='fail')setup();
   else if(state==='all')fullReset();
 };
-const initialWsUrl=defaultWsUrl();
-$('wsUrl').value=initialWsUrl;
-if(!initialWsUrl&&isGitHubPages())onlineStatus('WS URLにWebSocketサーバーのwss:// URLを入力してください',true);
-$('connectWs').onclick=connectOnline;
-$('disconnectWs').onclick=()=>{if(onlineState.ws)onlineState.ws.close()};
-$('createRoom').onclick=()=>{
-  onlineState.myName=($('playerName').value||'Player').trim().slice(0,20)||'Player';
-  if(!onlineSend('create_room',{name:onlineState.myName}))onlineStatus('先に接続してください',true);
-};
-$('joinRoom').onclick=()=>{
-  onlineState.myName=($('playerName').value||'Player').trim().slice(0,20)||'Player';
-  const roomId=($('roomId').value||'').trim().toUpperCase();
-  if(!roomId)return onlineStatus('ルームIDを入力してください',true);
-  if(!onlineSend('join_room',{roomId,name:onlineState.myName}))onlineStatus('先に接続してください',true);
-};
+updateDuelPanels();
 fullReset();requestAnimationFrame(loop);
 </script>
 </body>
