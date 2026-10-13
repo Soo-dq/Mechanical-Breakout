@@ -16,6 +16,14 @@ h1{font-size:22px;margin:4px 0 6px;font-weight:400}
 canvas{width:100%;height:auto;display:block;touch-action:none;transform-origin:center}
 #boardWrap{overflow:hidden}
 #boardWrap.flipped canvas{transform:rotate(180deg)}
+.simultaneous{display:grid;gap:8px}
+.simultaneous-frame{width:100%;height:48vh;min-height:360px;border:1px solid var(--ink);border-radius:6px;background:var(--paper)}
+.simultaneous-frame.top{transform:rotate(180deg)}
+.simultaneous-host #simultaneousMode~*{display:none}
+.embedded #simultaneousMode,.embedded #duelTop,.embedded #duelBottom{display:none}
+.embedded main{max-width:640px;padding-top:6px}
+.embedded h1{font-size:18px}
+.embedded .help,.embedded #localStatus{display:none}
 .row{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
 .row label{flex:1 1 100%;display:flex;align-items:center;gap:8px;font-size:15px}
 input[type=range]{flex:1;accent-color:var(--acc)}
@@ -43,6 +51,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 <body>
 <main>
 <h1>力学的ブロック崩し</h1>
+<section id="simultaneousMode" class="duel">
+<h2>同時プレイ</h2>
+<div class="row"><label>下側プレイヤー名 <input id="simBottomName" type="text" maxlength="20" value="Player 1"></label></div>
+<div class="row"><label>上側プレイヤー名 <input id="simTopName" type="text" maxlength="20" value="Player 2"></label></div>
+<button class="go" id="openSimultaneous">2つの枠で開始</button>
+<div class="small">上下の枠を同時に操作します。上側の枠は反転表示されます。</div>
+<div id="simultaneousFrames" class="simultaneous" hidden></div>
+</section>
 <section class="duel">
 <h2>同じ端末で2人対戦</h2>
 <div class="row"><label>下側プレイヤー <input id="bottomName" type="text" maxlength="20" value="Player 1"></label></div>
@@ -81,6 +97,9 @@ const TOAST=['反発係数2のブロックが出現!','球が真二つに分離!
 const cv=document.getElementById('c'),ctx=cv.getContext('2d'),$=id=>document.getElementById(id);
 const dpr=Math.min(window.devicePixelRatio||1,3);cv.width=CW*dpr;cv.height=CH*dpr;
 let N,W,H,S,wl,L=1,seed=1,blocks=[],balls=[],trail=[],shots=0,lim=2,lvT=0,totT=0,totS=0,sumS=0,sumL=0,state='aim',ballType=0,dUses=0,aim={x:0,y:0},mult=1,stillT=0,failStreak=0,fx={},toast='',toastAt=0,lastGrade='-',cols,rows;
+const params=new URLSearchParams(location.search);
+const embedded=params.get('embedded')==='1';
+const embeddedPlayer=params.get('player')==='top'?'top':'bottom';
 const localState={active:false,turn:0,names:['Player 1','Player 2'],results:[null,null],seed:1};
 let viewFlipped=false;
 const tx=x=>ML+x*S,ty=y=>MT+(H-y)*S;
@@ -116,6 +135,25 @@ function startLocalMatch(){
   ];
   localState.active=true;localState.turn=0;localState.results=[null,null];localState.seed=Math.floor(Math.random()*1e6);
   beginLocalTurn();
+}
+function openSimultaneous(){
+  const frames=$('simultaneousFrames');
+  frames.textContent='';
+  const names=[
+    ($('simBottomName').value||'Player 1').trim().slice(0,20)||'Player 1',
+    ($('simTopName').value||'Player 2').trim().slice(0,20)||'Player 2'
+  ];
+  [['bottom',names[0]],['top',names[1]]].forEach(([player,name])=>{
+    const frame=document.createElement('iframe');
+    frame.className='simultaneous-frame '+player;
+    frame.title=name+' のゲーム画面';
+    frame.src=location.pathname+'?embedded=1&player='+player+'&name='+encodeURIComponent(name);
+    frames.appendChild(frame);
+  });
+  frames.hidden=false;
+  $('openSimultaneous').disabled=true;
+  $('simBottomName').disabled=true;
+  $('simTopName').disabled=true;
 }
 function finishLocalTurn(ok){
   localState.results[localState.turn]={ok,time:lvT,shots};
@@ -404,6 +442,7 @@ $('topAngle').oninput=()=>{$('sa').value=$('topAngle').value;syncUI()};
 $('topFire').onclick=fire;
 $('topStop').onclick=()=>{if(state==='fly')endShot('')};
 $('startLocal').onclick=startLocalMatch;
+$('openSimultaneous').onclick=openSimultaneous;
 function fullReset(){failStreak=0;L=1;seed=Math.floor(Math.random()*1e6);totT=0;totS=0;sumS=0;sumL=0;lastGrade='-';dUses=0;ballType=0;setup()}
 $('reset').onclick=fullReset;
 $('regen').onclick=()=>{failStreak=0;seed=Math.floor(Math.random()*1e6);setup()};
@@ -412,7 +451,19 @@ $('next').onclick=()=>{
   else if(state==='fail')setup();
   else if(state==='all')fullReset();
 };
-updateDuelPanels();
+if(embedded){
+  document.body.classList.add('embedded');
+  const name=params.get('name')|| (embeddedPlayer==='top'?'Player 2':'Player 1');
+  $('bottomLabel').textContent=name;
+  $('bottomName').value=name;
+  $('bottomName').disabled=true;
+  $('topName').disabled=true;
+  $('topAngle').disabled=true;
+  $('startLocal').disabled=true;
+}else{
+  document.body.classList.add('simultaneous-host');
+  updateDuelPanels();
+}
 fullReset();requestAnimationFrame(loop);
 </script>
 </body>
