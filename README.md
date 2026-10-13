@@ -14,6 +14,14 @@ npm start
 ```
 Server default: `ws://localhost:8080`
 
+### GitHub Pages
+
+GitHub Pages can host the game UI, but it cannot run `server.js`. Online
+matches therefore require a separately deployed WebSocket server with a
+public `wss://` URL. Enter that URL in the **WS URL** field before clicking
+**接続**. The local default (`ws://localhost:8080`) is only for local
+development.
+
 ### 2) Connect clients
 - Open the game in two browser tabs/devices.
 - Enter player names.
