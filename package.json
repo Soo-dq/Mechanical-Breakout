@@ -1,0 +1,12 @@
+{
+  "name": "mechanical-breakout",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mechanical Breakout local + lightweight online duel server",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "8.21.0"
+  }
+}
