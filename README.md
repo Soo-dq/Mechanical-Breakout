@@ -4,11 +4,11 @@
 Open `/home/runner/work/Mechanical-Breakout/Mechanical-Breakout/index.html` in a browser.
 
 ## Same-device two-player mode
-The GitHub Pages version supports a two-player match on one smartphone or
-browser without an external server. Players take turns on the same board:
-the lower player goes first, then the upper player uses the upside-down
-display and controls. The result is decided by clear/fail, then time and
-shots.
+The GitHub Pages version supports two players simultaneously on one
+smartphone or browser without an external server. The game opens two
+independent frames: the lower player uses the normal frame and the upper
+player uses the upside-down frame. Each player controls their own game at
+the same time.
 
 ## Optional local server
 The Node server is retained for local development and diagnostics:
