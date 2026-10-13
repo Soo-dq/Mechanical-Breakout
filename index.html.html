@@ -76,7 +76,8 @@ function setup(){
   $('msg').textContent='';$('next').style.display='none';$('regen').style.display='none';buildBalls();syncUI();
 }
 function buildBalls(){
-  const box=$('balls');box.innerHTML='';
+  const box=$('balls');
+  while(box.firstChild)box.removeChild(box.firstChild);
   BALLS.forEach((b,i)=>{if(i===2&&L<43)return;const bt=document.createElement('button');
     bt.textContent=b.n;if(i===ballType)bt.className='on';
     bt.onclick=()=>{ballType=i;buildBalls();syncUI()};box.appendChild(bt)});
@@ -283,11 +284,15 @@ function syncUI(){
   $('fx').textContent=f.join('  ');
   const cum=sumL?gradeOf(sumS/sumL):'-';
   const w=x=>x>0?x:'なし';
-  $('info').innerHTML=['Lv '+L+(L>=99?' (最終)':''),'手数 '+shots+' / '+lim,
+  const infoEl=$('info');
+  infoEl.textContent='';
+  const info=['Lv '+L+(L>=99?' (最終)':''),'手数 '+shots+' / '+lim,
     '今回 '+lvT.toFixed(1)+' 秒','累積 '+totS+'手 '+totT.toFixed(0)+'秒',
     'スコア '+lastGrade+' / 通算 '+cum,'ブロック残 '+blocks.filter(k=>k.alive).length,
     '壁e 左'+wl.l+' 右'+wl.r+' 天'+wl.c,'床e '+w(wl.f),
-    '発射位置 ('+aim.x.toFixed(1)+', '+aim.y.toFixed(1)+')'].concat(L>=43?['ド○ゴンボール使用 '+dUses+'/7']:[]).map(s=>'<span>'+s+'</span>').join('');
+    '発射位置 ('+aim.x.toFixed(1)+', '+aim.y.toFixed(1)+')'];
+  if(L>=43)info.push('ド○ゴンボール使用 '+dUses+'/7');
+  for(const s of info){const span=document.createElement('span');span.textContent=s;infoEl.appendChild(span)}
   $('fire').disabled=state!=='aim'||insideBlock(aim.x,aim.y);
 }
 function toField(e){const r=cv.getBoundingClientRect(),k=CW/r.width;return{x:((e.clientX-r.left)*k-ML)/S,y:H-((e.clientY-r.top)*k-MT)/S}}

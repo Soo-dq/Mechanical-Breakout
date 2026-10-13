@@ -175,7 +175,8 @@ function setup(){
   $('msg').textContent='';$('next').style.display='none';$('regen').style.display='none';buildBalls();syncUI();
 }
 function buildBalls(){
-  const box=$('balls');box.innerHTML='';
+  const box=$('balls');
+  while(box.firstChild)box.removeChild(box.firstChild);
   BALLS.forEach((b,i)=>{if(i===2&&L<43)return;const bt=document.createElement('button');
     bt.textContent=b.n;if(i===ballType)bt.className='on';
     bt.onclick=()=>{ballType=i;buildBalls();syncUI()};box.appendChild(bt)});
