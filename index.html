@@ -1,2877 +1,1319 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 
-
-
 <head>
-
   <meta charset="utf-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-
   <title>力学的ブロック崩し</title>
-
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap">
-
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&family=Oswald:wght@700&display=swap"
+    rel="stylesheet">
   <style>
     :root {
-
-      --paper: #f4f5f7;
-
+      --bg: #f4f4f4;
       --surface: #ffffff;
-
-      --ink: #242b36;
-
-      --muted: #647184;
-
-      --grid: #dce1e8;
-
-      --acc: #b3402a;
-
-      --border: #d7dde5;
+      --ink: #111111;
+      --muted: #555555;
+      --grid: #cccccc;
+      --acc: #e60012;
+      --acc-alt: #fff100;
+      --border: #111111;
+      --shadow-color: #111111;
 
       box-sizing: border-box;
-
       padding-top: env(safe-area-inset-top, 0px);
-
       padding-bottom: env(safe-area-inset-bottom, 0px);
-
     }
-
-
 
     @media (prefers-color-scheme: dark) {
-
       :root:not([data-theme="light"]) {
-
-        --paper: #151a22;
-
-        --surface: #202733;
-
-        --ink: #e7ebf2;
-
-        --muted: #a6b0c0;
-
-        --grid: #343d4a;
-
-        --acc: #ff987e;
-
-        --border: #394453;
-
+        --bg: #1a1a1a;
+        --surface: #111111;
+        --ink: #f4f4f4;
+        --muted: #aaaaaa;
+        --grid: #333333;
+        --acc: #ff2a3f;
+        --acc-alt: #e6d800;
+        --border: #f4f4f4;
+        --shadow-color: #ff2a3f;
       }
-
     }
-
-
 
     :root[data-theme="dark"] {
-
-      --paper: #151a22;
-
-      --surface: #202733;
-
-      --ink: #e7ebf2;
-
-      --muted: #a6b0c0;
-
-      --grid: #343d4a;
-
-      --acc: #ff987e;
-
-      --border: #394453;
-
+      --bg: #1a1a1a;
+      --surface: #111111;
+      --ink: #f4f4f4;
+      --muted: #aaaaaa;
+      --grid: #333333;
+      --acc: #ff2a3f;
+      --acc-alt: #e6d800;
+      --border: #f4f4f4;
+      --shadow-color: #ff2a3f;
     }
-
-
 
     :root[data-theme="light"] {
-
-      --paper: #f4f5f7;
-
+      --bg: #f4f4f4;
       --surface: #ffffff;
-
-      --ink: #242b36;
-
-      --muted: #647184;
-
-      --grid: #dce1e8;
-
-      --acc: #b3402a;
-
-      --border: #d7dde5;
-
+      --ink: #111111;
+      --muted: #555555;
+      --grid: #cccccc;
+      --acc: #e60012;
+      --acc-alt: #fff100;
+      --border: #111111;
+      --shadow-color: #111111;
     }
-
-
 
     * {
-
       box-sizing: border-box;
-
+      /* 全てをカクカクにする */
+      border-radius: 0 !important;
     }
-
-
 
     html {
-
       scroll-padding-top: env(safe-area-inset-top, 0px);
-
       -webkit-text-size-adjust: 100%;
-
+      overflow-x: hidden;
     }
-
-
 
     body {
-
       margin: 0;
-
-      background-color: #fff;
-
+      /* 体育大会サイト風の薄い赤い方眼背景 */
+      background-color: #ffffff;
       background-image:
-
-        linear-gradient(rgba(230, 0, 18, .06) 1px, transparent 1px),
-
-        linear-gradient(90deg, rgba(230, 0, 18, .06) 1px, transparent 1px);
-
-      background-size: 20px 20px;
-
+        linear-gradient(to right, rgba(220, 45, 65, 0.13) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(220, 45, 65, 0.13) 1px, transparent 1px);
+      background-size: 24px 24px;
+      background-position: 0 0;
       color: var(--ink);
-
-      font-family: "Zen Kurenaido", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
-
+      font-family: "Oswald", "Noto Sans JP", sans-serif;
+      font-weight: 700;
       line-height: 1.6;
-
       -webkit-tap-highlight-color: transparent;
-
+      overflow-x: hidden;
     }
-
-
-
-    @media (prefers-color-scheme: dark) {
-
-      body {
-
-        background-color: var(--paper);
-
-        background-image: none;
-
-      }
-
-    }
-
-    :root[data-theme="dark"] body {
-
-      background-color: var(--paper);
-
-      background-image: none;
-
-    }
-
-
 
     main {
-
       width: 100%;
-
-      max-width: 760px;
-
+      max-width: 780px;
       margin: 0 auto;
-
-      padding: 12px 16px 28px;
-
+      padding: 24px 20px 40px;
     }
 
-
-
-    /* WP風 H1 装飾 */
-
+    /* ガジェッター＆ペルソナ風のH1タイトル */
     h1 {
-
-      background: #111;
-
+      background: var(--acc);
       color: #fff;
-
-      font-size: clamp(18px, 4.5vw, 22px);
-
+      font-size: clamp(24px, 6vw, 36px);
       font-weight: 900;
-
-      letter-spacing: 0.04em;
-
-      display: block;
-
+      letter-spacing: 0.1em;
+      display: inline-block;
       position: relative;
-
-      margin: 4px 0 18px;
-
-      padding: .75em .9em .75em 1.1em;
-
-      border-left: 8px solid #e60012;
-
-      border-right: 20px solid #e60012;
-
-      box-shadow: 7px 7px 0 #e60012;
-
-      line-height: 1.35;
-
+      margin: 20px 0 30px;
+      padding: 10px 24px;
+      border: 4px solid var(--border);
+      box-shadow: 8px 8px 0 var(--border);
+      transform: skew(-4deg);
+      text-transform: uppercase;
+      line-height: 1.2;
     }
 
     h1::before {
-
-      content: "";
-
+      content: "MECHANICAL BREAKOUT";
       position: absolute;
-
-      left: -16px;
-      top: 0;
-
-      width: 8px;
-      height: 100%;
-
-      background: #111;
-
+      top: -20px;
+      left: -8px;
+      background: #fff;
+      color: #000;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-family: "Oswald", sans-serif;
+      font-weight: 900;
+      border: 3px solid #000;
+      transform: skew(4deg);
     }
 
-    h1::after {
-
-      content: "";
-
-      position: absolute;
-
-      left: 0;
-      bottom: -6px;
-
-      width: 35%;
-
-      border-bottom: 3px solid #111;
-
+    .game-hud {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 0 0 18px;
     }
 
+    .hud-card {
+      min-width: 0;
+      padding: 10px 14px 12px;
+      border: 4px solid var(--border);
+      background: var(--surface);
+      box-shadow: 6px 6px 0 var(--shadow-color);
+    }
 
+    .hud-label {
+      display: block;
+      color: var(--muted);
+      font-family: "Noto Sans JP", sans-serif;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      line-height: 1.4;
+    }
+
+    .hud-value {
+      display: block;
+      font-family: "Oswald", "Noto Sans JP", sans-serif;
+      font-size: clamp(28px, 7vw, 40px);
+      font-weight: 900;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #hudLevel .hud-value {
+      color: var(--acc);
+    }
+
+    #hudAmmo .hud-value {
+      color: var(--ink);
+    }
+
+    #hudAmmo.low-ammo {
+      background: var(--acc-alt);
+    }
 
     canvas {
-
       width: 100%;
-
       height: auto;
-
       display: block;
-
-      border: 1px solid var(--border);
-
-      border-radius: 10px;
-
+      border: 4px solid var(--border);
       background: var(--surface);
-
+      box-shadow: 10px 10px 0 var(--shadow-color);
       touch-action: none;
-
+      margin-bottom: 30px;
     }
-
-
 
     #msg {
-
-      min-height: 1.8em;
-
-      margin: 12px 2px 4px;
-
+      min-height: 2em;
+      margin: 16px 2px 8px;
       color: var(--acc);
-
-      font-size: 17px;
-
-      font-weight: 600;
-
+      font-size: 22px;
+      font-weight: 900;
+      text-shadow: 2px 2px 0 var(--border);
       overflow-wrap: anywhere;
-
+      text-transform: uppercase;
     }
 
+    @media (prefers-color-scheme: dark) {
+      #msg {
+        text-shadow: none;
+      }
+    }
 
+    :root[data-theme="dark"] #msg {
+      text-shadow: none;
+    }
 
     #fx {
-
       min-height: 1.6em;
-
-      margin: 4px 2px 10px;
-
-      color: var(--muted);
-
-      font-size: 14px;
-
+      margin: 0 0 20px;
+      color: #000;
+      font-size: 15px;
+      font-weight: 900;
+      background: var(--acc-alt);
+      display: inline-block;
+      padding: 4px 12px;
+      border: 3px solid #000;
+      box-shadow: 4px 4px 0 #000;
+      transform: skew(-3deg);
       overflow-wrap: anywhere;
-
     }
 
-
+    #fx:empty {
+      display: none;
+    }
 
     .info {
-
       display: grid;
-
       grid-template-columns: repeat(2, minmax(0, 1fr));
-
-      gap: 1px;
-
-      margin: 12px 0;
-
-      padding: 8px;
-
-      border: 1px solid var(--border);
-
-      border-radius: 10px;
-
+      gap: 0;
+      margin: 20px 0;
+      padding: 0;
+      border: 4px solid var(--border);
       background: var(--border);
-
+      box-shadow: 8px 8px 0 var(--shadow-color);
     }
-
-
 
     .info span {
-
       min-width: 0;
-
-      padding: 7px 9px;
-
+      padding: 8px 12px;
       background: var(--surface);
-
-      font-size: 13px;
-
+      border: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 700;
       line-height: 1.5;
-
       overflow-wrap: anywhere;
-
+      text-transform: uppercase;
     }
-
-
 
     .row {
-
       display: flex;
-
       flex-wrap: wrap;
-
       align-items: center;
-
-      gap: 8px;
-
-      margin: 10px 0;
-
-      padding: 10px;
-
-      border: 1px solid var(--border);
-
-      border-radius: 10px;
-
+      gap: 12px;
+      margin: 20px 0;
+      padding: 16px;
+      border: 4px solid var(--border);
       background: var(--surface);
-
+      box-shadow: 8px 8px 0 var(--shadow-color);
     }
 
-
+    #balls {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      gap: 16px;
+    }
 
     .row label {
-
       display: flex;
-
       flex: 1 1 100%;
-
       align-items: center;
-
-      gap: 12px;
-
+      gap: 16px;
       min-width: 0;
-
-      font-size: 15px;
-
-      font-weight: 600;
-
+      font-size: 16px;
+      font-weight: 900;
+      text-transform: uppercase;
     }
 
-
-
+    /* シャープなレンジスライダー */
     input[type="range"] {
-
+      -webkit-appearance: none;
       flex: 1;
-
       width: 100%;
-
       min-width: 0;
-
-      height: 32px;
-
+      height: 20px;
       margin: 0;
-
-      accent-color: var(--acc);
-
+      background: transparent;
+      border: 3px solid var(--border);
+      box-shadow: 4px 4px 0 var(--border);
     }
 
-
-
-    #av {
-
-      min-width: 4em !important;
-
-      text-align: right;
-
-      font-variant-numeric: tabular-nums;
-
-      color: var(--acc);
-
-    }
-
-
-
-    button {
-
-      min-height: 44px;
-
-      padding: 9px 14px;
-
-      border: 1px solid var(--border);
-
-      border-radius: 7px;
-
-      background: var(--surface);
-
-      color: var(--ink);
-
-      font: inherit;
-
-      font-size: 14px;
-
-      font-weight: 600;
-
-      line-height: 1.4;
-
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 28px;
+      width: 16px;
+      background: var(--acc);
+      border: 3px solid var(--border);
       cursor: pointer;
-
-      touch-action: manipulation;
-
-    }
-
-
-
-    button.go,
-
-    button.on {
-
-      background: var(--ink);
-
-      border-color: var(--ink);
-
-      color: var(--paper);
-
-    }
-
-
-
-    button:active:not(:disabled) {
-
-      opacity: .75;
-
-    }
-
-
-
-    button:disabled {
-
-      opacity: .4;
-
-      cursor: not-allowed;
-
-    }
-
-
-
-    button:focus-visible,
-
-    input:focus-visible {
-
-      outline: 3px solid var(--acc);
-
-      outline-offset: 3px;
-
-    }
-
-
-
-    #balls button {
-
-      flex: 1 1 auto;
-
-      min-width: 0;
-
-    }
-
-
-
-    #reset,
-
-
-
-
-    .help {
-
-      margin: 12px 2px 0;
-
-      color: var(--muted);
-
-      font-size: 13px;
-
-      line-height: 1.8;
-
-      overflow-wrap: anywhere;
-
-    }
-
-
-
-    .legend {
-
-      display: flex;
-
-      flex-wrap: wrap;
-
-      gap: 8px 14px;
-
-      margin: 8px 2px;
-
-      font-size: 13px;
-
-      color: var(--muted);
-
-    }
-
-
-
-    .legend span {
-
-      white-space: nowrap;
-
-    }
-
-
-
-    .legend i {
-
-      display: inline-block;
-
-      width: 9px;
-
-      height: 9px;
-
-      border-radius: 50%;
-
-      margin-right: 4px;
-
-    }
-
-
-
-    @media (max-width: 420px) {
-
-      main {
-
-        padding: 10px 10px 24px;
-
-      }
-
-
-
-      h1 {
-
-        font-size: 22px;
-
-      }
-
-
-
-      .row {
-
-        gap: 6px;
-
-        padding: 8px;
-
-      }
-
-
-
-      button {
-
-        padding: 9px 10px;
-
-        font-size: 13px;
-
-      }
-
-
-
-      .info {
-
-        padding: 5px;
-
-      }
-
-
-
-      .info span {
-
-        padding: 7px 6px;
-
-        font-size: 12px;
-
-      }
-
-
-
-      #balls button {
-
-        flex-basis: 100%;
-
-      }
-
-    }
-
-
-
-    @media (prefers-reduced-motion: reduce) {
-
-      * {
-
-        scroll-behavior: auto !important;
-
-      }
-
-    }
-
-
-    /* 体育大会実行委員会サイト風：落ち着いたネイビー＋ティール、実用的な情報パネル */
-    :root {
-      --paper: #f3f6f5;
-      --surface: #ffffff;
-      --ink: #183342;
-      --muted: #637984;
-      --grid: #d9e5e3;
-      --acc: #117d6a;
-      --border: #d3e0dd;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        --paper: #121e25;
-        --surface: #1b2c35;
-        --ink: #e8f1f0;
-        --muted: #a8bcbd;
-        --grid: #33474d;
-        --acc: #55c7ac;
-        --border: #344a50;
-      }
-    }
-
-    :root[data-theme="dark"] {
-      --paper: #121e25;
-      --surface: #1b2c35;
-      --ink: #e8f1f0;
-      --muted: #a8bcbd;
-      --grid: #33474d;
-      --acc: #55c7ac;
-      --border: #344a50;
-    }
-
-    :root[data-theme="light"] {
-      --paper: #f3f6f5;
-      --surface: #fff;
-      --ink: #183342;
-      --muted: #637984;
-      --grid: #d9e5e3;
-      --acc: #117d6a;
-      --border: #d3e0dd;
-    }
-
-    body {
-      background-color: var(--paper);
-      background-image: linear-gradient(rgba(17, 125, 106, .045) 1px, transparent 1px), linear-gradient(90deg, rgba(17, 125, 106, .045) 1px, transparent 1px);
-      background-size: 24px 24px;
-      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
-    }
-
-    main {
-      max-width: 820px;
-      padding-top: 18px;
-    }
-
-    h1 {
-      background: #183342;
-      color: #fff;
-      border-left: 8px solid #117d6a;
-      border-right: 8px solid #117d6a;
-      box-shadow: 6px 6px 0 #d5aa42;
-      border-radius: 2px;
-      letter-spacing: .035em;
-    }
-
-    h1::before {
-      background: #183342;
-    }
-
-    h1::after {
-      border-bottom-color: #d5aa42;
-    }
-
-    canvas {
-      border: 2px solid var(--border);
-      border-radius: 8px;
-      box-shadow: 0 3px 0 rgba(24, 51, 66, .08);
-    }
-
-    #msg {
-      color: var(--acc);
-      font-weight: 800;
-    }
-
-    .info {
-      border: 1px solid var(--border);
-      background: var(--border);
-      border-radius: 8px;
-    }
-
-    .info span {
-      font-variant-numeric: tabular-nums;
-    }
-
-    .row {
-      border-radius: 8px;
-      border-color: var(--border);
-      box-shadow: 0 2px 0 rgba(24, 51, 66, .035);
-    }
-
-    button {
-      border-radius: 6px;
-      border-width: 1px;
-    }
-
-    button.go,
-    button.on {
-      background: #117d6a;
-      border-color: #117d6a;
-      color: #fff;
-    }
-
-    button:focus-visible,
-    input:focus-visible {
-      outline-color: #d5aa42;
-    }
-
-    .help {
-      padding: 12px 14px;
-      background: var(--surface);
-      border-left: 4px solid #117d6a;
-      border-radius: 0 6px 6px 0;
-    }
-
-    .legend {
-      padding: 8px 10px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 7px;
     }
 
     #speedValue {
-      min-width: 3.5em;
+      min-width: 4em !important;
       text-align: right;
-      color: var(--acc);
       font-variant-numeric: tabular-nums;
+      color: var(--acc);
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    button {
+      min-height: 48px;
+      padding: 10px 20px;
+      border: 4px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      font: inherit;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.4;
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow: 6px 6px 0 var(--shadow-color);
+      transform: skew(-2deg);
+      transition: all 0.1s ease;
+      text-transform: uppercase;
+    }
+
+    button.go,
+    button.on {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--bg);
+      box-shadow: 6px 6px 0 var(--acc);
+    }
+
+    button:active:not(:disabled) {
+      transform: skew(-2deg) translate(6px, 6px);
+      box-shadow: 0 0 0 var(--shadow-color) !important;
+    }
+
+    button:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 4px solid var(--acc-alt);
+      outline-offset: 4px;
+    }
+
+    #balls button {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .help {
+      margin: 30px 0 10px;
+      padding: 16px;
+      background: var(--acc-alt);
+      color: #000;
+      border: 4px solid #000;
+      box-shadow: 8px 8px 0 var(--acc);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.8;
+      overflow-wrap: anywhere;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      margin: 16px 0;
+      padding: 12px;
+      background: var(--surface);
+      border: 4px solid var(--border);
+      box-shadow: 6px 6px 0 var(--shadow-color);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .legend span {
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin-right: 6px;
+      border: 2px solid var(--border);
     }
 
     .section-kicker {
-      margin: 0 2px 8px;
-      color: var(--acc);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .14em;
+      display: inline-block;
+      margin: 10px 0 -15px;
+      padding: 4px 12px;
+      background: var(--ink);
+      color: var(--bg);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      position: relative;
+      z-index: 2;
+      border: 3px solid var(--border);
+    }
+
+    @media (max-width: 480px) {
+      main {
+        padding: 16px 12px 30px;
+      }
+
+      h1 {
+        font-size: 24px;
+        box-shadow: 6px 6px 0 var(--border);
+      }
+
+      h1::before {
+        font-size: 10px;
+        top: -16px;
+      }
+
+      .row {
+        gap: 12px;
+        padding: 12px;
+      }
+
+      button {
+        padding: 8px 12px;
+        font-size: 14px;
+        min-height: 44px;
+      }
+
+      .info span {
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+
+      #balls {
+        flex-direction: column;
+      }
+
+      #balls button {
+        flex-basis: 100%;
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        scroll-behavior: auto !important;
+      }
+
+      button {
+        transition: none;
+      }
     }
   </style>
-
 </head>
 
-
-
 <body>
-
   <main>
-
     <h1>力学的ブロック崩し</h1>
-
+    <section class="game-hud" aria-label="ゲーム状況">
+      <div class="hud-card" id="hudLevel">
+        <span class="hud-label">CURRENT LEVEL</span>
+        <strong class="hud-value">LV <span id="hudLevelValue">1</span></strong>
+      </div>
+      <div class="hud-card" id="hudAmmo">
+        <span class="hud-label">REMAINING SHOTS / 残り弾数</span>
+        <strong class="hud-value"><span id="hudAmmoValue">2</span><span style="font-size:.58em"> / <span
+              id="hudAmmoMax">2</span></span></strong>
+      </div>
+    </section>
     <canvas id="c"></canvas>
 
-
-
-    <div id="msg"></div>
-
-    <div id="fx"></div>
-
-
-
-    <div class="legend">
-
-      <span><i style="background:#27ae60"></i>合成ベクトル</span>
-
-      <span><i style="background:#e74c3c"></i>X成分</span>
-
-      <span><i style="background:#3498db"></i>Y成分</span>
-
-    </div>
-
-
-
-    <div class="info" id="info"></div>
-
-    <div class="row" id="balls"></div>
-
-
-
-    <p class="section-kicker">PHYSICS / INTERACTIVE SIMULATION</p>
+    <p class="section-kicker">PHYSICS SIMULATION</p>
     <div class="row">
       <label>シミュレーション速度
         <input id="speed" type="range" min="1" max="10" step="1" value="5" aria-label="シミュレーション速度">
         <b id="speedValue">5倍</b>
       </label>
     </div>
-    <div class="row"><button id="reset">最初から</button></div>
-    <div class="help">
-      【操作方法】球を押したまま、飛ばしたい方向と反対側へ引っ張り、指を離すと発射します。引くほど初速度が上がり、上限は10
-      m/sです。緑は合成ベクトル、赤はX成分、青はY成分です。飛行中に盤面をタップすると球を止め、クリア・失敗後のタップで次の操作に進みます。空いている場所をタップすると発射位置を移動できます。壁の線が太いほど反発係数が大きく、点線の床は「なし」（落ちると球が消える）です。進行はこの端末のブラウザに自動保存されます。
+
+    <div id="msg"></div>
+    <div id="fx"></div>
+
+    <div class="legend">
+      <span><i style="background:#27ae60"></i>合成ベクトル</span>
+      <span><i style="background:#e74c3c"></i>X成分</span>
+      <span><i style="background:#3498db"></i>Y成分</span>
+    </div>
+
+    <div class="info" id="info"></div>
+
+    <div class="row" id="balls"></div>
+
+    <div class="row" style="background:transparent; border:none; box-shadow:none; padding:0; justify-content:center;">
+      <button id="reset" style="width:100%; max-width: 300px;">最初から</button>
     </div>
 
   </main>
 
-
-
   <script>
-
-    const g = 9.8, R = 1, ML = 38, MT = 10, MB = 30, MR = 10, FW = 557, CW = ML + FW + MR, CH = MT + FW + MB, DT = 1 / 480, V0 = 2.5 * g, VMAX = 300, E1 = .98;
-
+    const g = 9.8, R = 1.2, ML = 38, MT = 10, MB = 30, MR = 10, FW = 557, CW = ML + FW + MR, CH = MT + FW + MB, DT = 1 / 480, VMAX = 300, E1 = .98;
     const BALLS = [
-
-      { n: 'スーパー e.98·m', e: E1, M: 1, col: '#c0392b' },
-
+      { n: 'スーパー e.98·m', e: E1, M: 1, col: '#e60012' },
       { n: '鉄球 e.75·2m', e: .75, M: 2, col: '#7f8c8d' },
-
       { n: 'ド○ゴンボール e.75·m', e: .75, M: 1, col: '#e67e22' }
-
     ];
-
     const TOAST = [
-
       '反発係数2のブロックが出現!',
-
       '球が真二つに分離!',
-
       '質量×2(60秒)',
-
       '重力×2(60秒)',
-
       '無重力(60秒)',
-
       'ドパガキモード突入(30秒)',
-
-      '慣性系突入(60秒)'
-
+      '慣性系突入(60秒)',
+      'フリック投げ解放！指で弾いて初速度をつける(次の1投)'
     ];
-
     const cv = document.getElementById('c'), ctx = cv.getContext('2d'), $ = id => document.getElementById(id);
-
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
-
     cv.width = CW * dpr;
-
     cv.height = CH * dpr;
-
-
 
     let N, W, H, S, wl, L = 1, seed = 1, blocks = [], balls = [], trail = [], shots = 0, lim = 2, lvT = 0, totT = 0, totS = 0, sumS = 0, sumL = 0, state = 'aim', ballType = 0, dUses = 0, aim = { x: 0, y: 0 }, mult = 5, stillT = 0, failStreak = 0, tilt = 0, fx = {}, toast = '', toastAt = 0, lastGrade = '-', cols, rows;
     let dragAngle = Math.PI / 3;
 
-
-
     // ドラッグ発射用の状態
-
     let dragging = false;
-
     let dragPoint = null;
-
     let pullDistance = 0;
-
     let launchSpeed = 0;
 
-
-
-    // 引っ張り距離1mあたりの速度増加量（最大10 m/s）
-
-    const MAX_LAUNCH_SPEED = 10;
-
-    const SPEED_PER_DISTANCE = MAX_LAUNCH_SPEED / 2; // 2m引っ張りで最大速度
-
+    // 初速度上限と矢印の最大長を同じ基準で管理する
+    const MAX_LAUNCH_SPEED = 20;
+    const V0 = MAX_LAUNCH_SPEED;
+    const SPEED_PER_DISTANCE = MAX_LAUNCH_SPEED / 2; // 2m引っ張りで上限速度
     const MAX_ARROW_LENGTH = 4 * g;
 
-
-
     const tx = x => ML + x * S;
-
     const ty = y => MT + (H - y) * S;
-
     const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
-
-
     function mulberry(a) {
-
       return () => {
-
         a |= 0;
-
         a = a + 0x6D2B79F5 | 0;
-
         let t = Math.imul(a ^ a >>> 15, 1 | a);
-
         t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-
         return ((t ^ t >>> 14) >>> 0) / 4294967296;
-
       };
-
     }
-
-
 
     const gradeOf = r => r <= .5 ? 'S' : r <= .6 ? 'A' : r <= .7 ? 'B' : r <= .8 ? 'C' : r <= .9 ? 'D' : r < 1 ? 'E' : 'F';
 
-
-
     function setup() {
-
       N = 6 + Math.floor((L - 1) / 2);
-
       W = H = N * g;
-
       S = FW / W;
 
-
-
       const r = mulberry(seed + L * 7919);
-
       const pick = a => a[Math.floor(r() * a.length)];
-
       const es = [E1, E1, .9, .75, .5, .25];
 
-
-
       wl = L === 1
-
         ? { l: E1, r: E1, c: E1, f: E1 }
-
         : { l: pick(es), r: pick(es), c: pick(es), f: (L >= 3 && r() < .2) ? 0 : pick(es) };
 
-
-
       tilt = (L >= 20 && r() < .5)
-
         ? (r() < .5 ? -1 : 1) * (5 + r() * 25) * Math.PI / 180
-
         : 0;
 
-
-
       cols = Math.floor(N / 2);
-
       rows = Math.min(2 + Math.floor(L / 4), N - 4);
 
-
-
       const cw = W / cols, cells = [];
-
-
-
       for (let i = 0; i < cols; i++) {
-
         for (let j = 0; j < rows; j++)cells.push([i, j]);
-
       }
-
-
-
       for (let k = cells.length - 1; k > 0; k--) {
-
         const m = Math.floor(r() * (k + 1));
-
         [cells[k], cells[m]] = [cells[m], cells[k]];
-
       }
-
-
 
       const cnt = Math.min(cells.length, Math.round(cols * rows * Math.max(.4, 1 - .03 * L)));
-
-
-
       blocks = cells.slice(0, cnt).map(([i, j]) => {
-
         const hat = L >= 2 && r() < .12;
-
         const e = hat ? E1 : (r() < .5 ? E1 : .5);
-
         return { x: i * cw, y: j * g, w: cw, h: g, i, j, e, hat, th: (e === E1 ? 16 : 8) * g, imp: 0, alive: true };
-
       });
-
-
 
       lim = 3 + Math.floor(L * .4);
-
       shots = 0;
-
       lvT = 0;
-
       balls = [];
-
       trail = [];
-
-      fx = { mass: 0, grav: 0, zero: 0, dopa: 0, inert: 0, ix: 0 };
-
-
-
+      fx = { mass: 0, grav: 0, zero: 0, dopa: 0, inert: 0, ix: 0, flick: 0 };
       aim = { x: W / 2, y: (rows + 2) * g };
-
       state = 'aim';
-
       stillT = 0;
-
       resetDrag();
-
-
-
       if (ballType === 2 && L < 43) ballType = 0;
 
-
-
       $('msg').textContent = '';
-
       buildBalls();
-
       syncUI();
-
       saveGame();
-
     }
-
-
 
     function resetDrag() {
-
       dragging = false;
-
       dragPoint = null;
-
       pullDistance = 0;
-
       launchSpeed = 0;
-
     }
-
-
 
     function buildBalls() {
-
       const box = $('balls');
-
       box.innerHTML = '';
-
-
-
       BALLS.forEach((b, i) => {
-
         if (i === 2 && L < 43) return;
-
-
-
         const bt = document.createElement('button');
-
         bt.textContent = b.n;
-
         if (i === ballType) bt.className = 'on';
-
-
-
         bt.onclick = () => {
-
           if (state !== 'aim') return;
-
           ballType = i;
-
           buildBalls();
-
           syncUI();
-
           saveGame();
-
         };
-
-
-
         box.appendChild(bt);
-
       });
-
     }
-
-
 
     const gk = () => (fx.zero > 0 ? 0 : fx.grav > 0 ? 2 : 1);
-
     const mk = () => (fx.mass > 0 ? 2 : 1) * (fx.dopa > 0 ? 2 : 1);
 
-
-
     function insideBlock(x, y) {
-
       return blocks.some(b =>
-
         b.alive &&
-
         Math.hypot(
-
           x - Math.max(b.x, Math.min(x, b.x + b.w)),
-
           y - Math.max(b.y, Math.min(y, b.y + b.h))
-
         ) < R + .05
-
       );
-
     }
 
-
-
     function step(b, dt, commit, pend) {
-
       const sp = Math.hypot(b.vx, b.vy);
-
-
-
       if (sp > VMAX) {
-
         b.vx *= VMAX / sp;
-
         b.vy *= VMAX / sp;
-
       }
-
-
-
       const gg = g * gk();
-
       const ax = gg * (-Math.sin(tilt) + (fx.inert > 0 ? fx.ix : 0));
-
       const ay = -gg * Math.cos(tilt);
 
-
-
       b.x += b.vx * dt + .5 * ax * dt * dt;
-
       b.y += b.vy * dt + .5 * ay * dt * dt;
-
       b.vx += ax * dt;
-
       b.vy += ay * dt;
 
-
-
       const eb = fx.dopa > 0 ? 1.5 : b.e;
-
-
-
       if (b.x < R) {
-
         if (b.vx < 0) {
-
           const E = eb * wl.l;
-
           b.x = R + (R - b.x) * E;
-
           b.vx *= -E;
-
         } else b.x = R;
-
       }
-
-
-
       if (b.x > W - R) {
-
         if (b.vx > 0) {
-
           const E = eb * wl.r;
-
           b.x = W - R - (b.x - W + R) * E;
-
           b.vx *= -E;
-
         } else b.x = W - R;
-
       }
-
-
-
       if (b.y > H - R) {
-
         if (b.vy > 0) {
-
           const E = eb * wl.c;
-
           b.y = H - R - (b.y - H + R) * E;
-
           b.vy *= -E;
-
         } else b.y = H - R;
-
       }
-
-
-
       if (wl.f > 0 || fx.dopa > 0) {
-
         if (b.y < R) {
-
           if (b.vy < 0) {
-
             const E = wl.f > 0 ? eb * wl.f : 2;
-
             b.y = R + (R - b.y) * E;
-
             b.vy *= -E;
-
           } else b.y = R;
-
         }
-
       } else if (b.y < -5) b.lost = true;
 
-
-
       if (!isFinite(b.x + b.y + b.vx + b.vy)) {
-
         b.lost = true;
-
         return;
-
       }
 
-
-
       b.x = Math.min(W - R, Math.max(R, b.x));
-
       b.y = Math.min(H - R, b.y);
-
       if (wl.f > 0 || fx.dopa > 0) b.y = Math.max(R, b.y);
 
-
-
       for (const k of blocks) {
-
         if (
-
           !k.alive ||
-
           b.x < k.x - R || b.x > k.x + k.w + R ||
-
           b.y < k.y - R || b.y > k.y + k.h + R
-
         ) continue;
 
-
-
         const cx = Math.max(k.x, Math.min(b.x, k.x + k.w));
-
         const cy = Math.max(k.y, Math.min(b.y, k.y + k.h));
-
         const dx = b.x - cx, dy = b.y - cy, d2 = dx * dx + dy * dy;
-
-
 
         if (d2 >= R * R) continue;
 
-
-
         let nx, ny, pen = 0;
-
-
-
         if (d2 < 1e-9) {
-
           const l = b.x - k.x;
-
           const r = k.x + k.w - b.x;
-
           const bt = b.y - k.y;
-
           const tp = k.y + k.h - b.y;
-
           const m = Math.min(l, r, bt, tp);
 
-
-
           if (m === l) { nx = -1; ny = 0; b.x = k.x - R; }
-
           else if (m === r) { nx = 1; ny = 0; b.x = k.x + k.w + R; }
-
           else if (m === bt) { nx = 0; ny = -1; b.y = k.y - R; }
-
           else { nx = 0; ny = 1; b.y = k.y + k.h + R; }
-
         } else {
-
           const d = Math.sqrt(d2);
-
           nx = dx / d;
-
           ny = dy / d;
-
           pen = R - d;
-
           b.x = cx + nx * R;
-
           b.y = cy + ny * R;
-
         }
-
-
 
         const vn = -(b.vx * nx + b.vy * ny);
-
-
-
         if (vn > 0) {
-
           const E = eb * k.e;
-
           const j = (1 + E) * vn;
-
-
-
           if (pen > 0) {
-
             b.x += nx * pen * E;
-
             b.y += ny * pen * E;
-
           }
-
-
-
           b.vx += j * nx;
-
           b.vy += j * ny;
 
-
-
           if (commit && j > .05) {
-
             k.imp += b.M * mk() * j;
-
             if (k.imp >= k.th) {
-
               k.alive = false;
-
               if (k.hat) pend.push([b, k]);
-
             }
-
           }
-
         }
-
       }
-
     }
-
-
 
     function collideBalls() {
-
       for (let i = 0; i < balls.length; i++) {
-
         for (let j = i + 1; j < balls.length; j++) {
-
           const a = balls[i], b = balls[j];
-
           const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
-
-
-
           if (d2 >= 4 * R * R || d2 < 1e-12) continue;
 
-
-
           const d = Math.sqrt(d2);
-
           const nx = dx / d, ny = dy / d;
-
           const vr = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
-
-
-
           if (vr <= 0) continue;
 
-
-
           const jj = 2 * vr / (1 / a.M + 1 / b.M);
-
-
-
           a.vx -= jj / a.M * nx;
-
           a.vy -= jj / a.M * ny;
-
           b.vx += jj / b.M * nx;
-
           b.vy += jj / b.M * ny;
 
-
-
           const ov = (2 * R - d) / 2;
-
           a.x -= nx * ov;
-
           a.y -= ny * ov;
-
           b.x += nx * ov;
-
           b.y += ny * ov;
-
         }
-
       }
-
     }
-
-
 
     function startDopa() {
-
       if (fx.dopa <= 0) {
-
-        for (const b of balls) {
-
-          b.vx *= 2;
-
-          b.vy *= 2;
-
-        }
-
+        for (const b of balls) { b.vx *= 2; b.vy *= 2; }
       }
-
       fx.dopa = 30;
-
     }
-
-
 
     function tickFx(dt) {
-
       for (const k of ['mass', 'grav', 'zero', 'inert']) {
-
         if (fx[k] > 0) fx[k] = Math.max(0, fx[k] - dt);
-
       }
-
-
-
       if (fx.dopa > 0) {
-
         fx.dopa -= dt;
-
         if (fx.dopa <= 0) {
-
           fx.dopa = 0;
-
-          for (const b of balls) {
-
-            b.vx /= 2;
-
-            b.vy /= 2;
-
-          }
-
+          for (const b of balls) { b.vx /= 2; b.vy /= 2; }
         }
-
       }
-
     }
-
-
 
     function hatena(b) {
-
-      const r = Math.floor(Math.random() * 7);
-
+      const r = Math.floor(Math.random() * 8);
       toast = TOAST[r];
-
       toastAt = performance.now();
 
-
-
       if (r === 0) {
-
         const cw = W / cols, free = [];
-
-
-
         for (let i = 0; i < cols; i++) {
-
           for (let j = 0; j < rows + 3; j++) {
-
             if (blocks.some(k => k.alive && k.i === i && k.j === j)) continue;
-
-
-
             const x = i * cw, y = j * g;
-
-
-
-            if (balls.some(o =>
-
-              Math.hypot(
-
-                o.x - Math.max(x, Math.min(o.x, x + cw)),
-
-                o.y - Math.max(y, Math.min(o.y, y + g))
-
-              ) < R + .5
-
-            )) continue;
-
-
-
+            if (balls.some(o => Math.hypot(o.x - Math.max(x, Math.min(o.x, x + cw)), o.y - Math.max(y, Math.min(o.y, y + g))) < R + .5)) continue;
             free.push([i, j]);
-
           }
-
         }
-
-
-
         if (free.length) {
-
           const [i, j] = free[Math.floor(Math.random() * free.length)];
-
-          blocks.push({
-
-            x: i * cw, y: j * g, w: cw, h: g, i, j,
-
-            e: 2, hat: false, th: 16 * g, imp: 0, alive: true
-
-          });
-
+          blocks.push({ x: i * cw, y: j * g, w: cw, h: g, i, j, e: 2, hat: false, th: 16 * g, imp: 0, alive: true });
         }
-
       } else if (r === 1) {
-
         const ux = -b.vy * .4, uy = b.vx * .4, b2 = { ...b };
-
-        b.M /= 2;
-
-        b2.M = b.M;
-
-        b.vx += ux;
-
-        b.vy += uy;
-
-        b2.vx -= ux;
-
-        b2.vy -= uy;
-
+        b.M /= 2; b2.M = b.M;
+        b.vx += ux; b.vy += uy;
+        b2.vx -= ux; b2.vy -= uy;
         balls.push(b2);
-
       } else if (r === 2) fx.mass = 60;
-
       else if (r === 3) fx.grav = 60;
-
       else if (r === 4) fx.zero = 60;
-
       else if (r === 5) startDopa();
-
-      else {
-
-        fx.inert = 60;
-
-        fx.ix = Math.random() < .5 ? -1 : 1;
-
-      }
-
+      else if (r === 6) { fx.inert = 60; fx.ix = Math.random() < .5 ? -1 : 1; }
+      else { fx.flick = 1; }
     }
 
+    function launchAngle() { return dragAngle; }
 
-
-    function launchAngle() {
-      return dragAngle;
-    }
-
-    // 指の位置から発射方向・速度を計算する。速度は上限で飽和する。
     function updateDrag(p) {
       dragPoint = p;
       const dx = aim.x - p.x;
       const dy = aim.y - p.y;
       pullDistance = Math.hypot(dx, dy);
-      if (pullDistance > 0.01) dragAngle = Math.atan2(dy, dx);
+      if (pullDistance > 0.01) {
+        // 通常は引いた方向と逆向きに発射。フリック投げ中は指を動かした方向へ発射。
+        dragAngle = fx.flick > 0
+          ? Math.atan2(p.y - aim.y, p.x - aim.x)
+          : Math.atan2(dy, dx);
+      }
       launchSpeed = Math.min(MAX_LAUNCH_SPEED, pullDistance * SPEED_PER_DISTANCE);
       syncUI();
     }
 
-    // 画面上に矢印と矢印の先端を描く
-
     function drawArrow(x1, y1, x2, y2, color, width = 2) {
-
-      const dx = x2 - x1;
-
-      const dy = y2 - y1;
-
-      const len = Math.hypot(dx, dy);
-
-
-
+      const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy);
       if (len < 1) return;
-
-
-
-      const head = Math.min(10, Math.max(4, len * .18));
-
+      const head = Math.min(12, Math.max(6, len * .2));
       const angle = Math.atan2(dy, dx);
 
-
-
       ctx.strokeStyle = color;
-
       ctx.fillStyle = color;
-
       ctx.lineWidth = width;
-
-      ctx.lineCap = 'round';
-
-      ctx.lineJoin = 'round';
-
-
+      ctx.lineCap = 'square'; /* sharp! */
+      ctx.lineJoin = 'miter';
 
       ctx.beginPath();
-
       ctx.moveTo(x1, y1);
-
       ctx.lineTo(x2, y2);
-
       ctx.stroke();
 
-
-
       ctx.beginPath();
-
       ctx.moveTo(x2, y2);
-
-      ctx.lineTo(
-
-        x2 - head * Math.cos(angle - Math.PI / 6),
-
-        y2 - head * Math.sin(angle - Math.PI / 6)
-
-      );
-
-      ctx.lineTo(
-
-        x2 - head * Math.cos(angle + Math.PI / 6),
-
-        y2 - head * Math.sin(angle + Math.PI / 6)
-
-      );
-
+      ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
       ctx.closePath();
-
       ctx.fill();
-
     }
-
-
 
     function fire() {
-
       if (state !== 'aim' || insideBlock(aim.x, aim.y)) return;
-
-
-
       const T = BALLS[ballType];
-
       const a = launchAngle();
-
-
-
-      // ドラッグ操作なら引っ張り距離から速度を決定。
-
-      // 発射ボタンを直接押した場合は従来の初速度を使う。
-
       const speed = dragging && launchSpeed > 0 ? launchSpeed : V0;
-
-
 
       shots++;
-
       totS++;
-
       trail = [];
-
       stillT = 0;
-
-      fx = { mass: 0, grav: 0, zero: 0, dopa: 0, inert: 0, ix: 0 };
-
-
-
-      balls = [{
-
-        x: aim.x,
-
-        y: aim.y,
-
-        vx: speed * Math.cos(a),
-
-        vy: speed * Math.sin(a),
-
-        e: T.e,
-
-        M: T.M,
-
-        col: T.col
-
-      }];
-
-
-
+      fx = { mass: 0, grav: 0, zero: 0, dopa: 0, inert: 0, ix: 0, flick: 0 };
+      balls = [{ x: aim.x, y: aim.y, vx: speed * Math.cos(a), vy: speed * Math.sin(a), e: T.e, M: T.M, col: T.col }];
       state = 'fly';
-
       $('msg').textContent = '';
 
-
-
       if (ballType === 2) {
-
         dUses++;
-
         if (dUses >= 7) {
-
           dUses = 0;
-
           startDopa();
-
           toast = TOAST[5];
-
           toastAt = performance.now();
-
         }
-
       }
-
-
-
       resetDrag();
-
       saveGame();
-
       syncUI();
-
     }
-
-
 
     function endShot(why) {
-
       balls = [];
-
-      fx = { mass: 0, grav: 0, zero: 0, dopa: 0, inert: 0, ix: 0 };
-
+      fx = { mass: 0, grav: 0, zero: 0, dopa: 0, inert: 0, ix: 0, flick: 0 };
       acc = 0;
-
       resetDrag();
-
-
-
       const cleared = blocks.every(k => !k.alive);
 
-
-
       if (cleared) finish(true);
-
       else if (shots >= lim) finish(false);
-
       else {
-
         state = 'aim';
-
-        $('msg').textContent = {
-
-          lost: '球が落ちました',
-
-          still: '球が止まりました'
-
-        }[why] || '';
-
+        $('msg').textContent = { lost: '球が落ちました', still: '球が止まりました' }[why] || '';
         saveGame();
-
       }
-
-
-
       syncUI();
-
     }
-
-
 
     function finish(ok) {
-
-      sumS += shots;
-
-      sumL += lim;
-
+      sumS += shots; sumL += lim;
       failStreak = ok ? 0 : failStreak + 1;
-
       lastGrade = ok ? gradeOf(shots / lim) : 'F';
-
-
-
       const cum = gradeOf(sumS / sumL);
 
-
-
       if (ok) {
-
         state = L >= 99 ? 'all' : 'clear';
-
-        $('msg').textContent =
-
-          (L >= 99 ? 'ALL CLEAR! ' : '') +
-
-          'Lv' + L + 'クリア! ' + shots + '/' + lim + '手 ' +
-
-          lvT.toFixed(1) + '秒 スコア' + lastGrade + ' / 通算' + cum;
-
-
+        $('msg').textContent = (L >= 99 ? 'ALL CLEAR! ' : '') + 'Lv' + L + ' CLEAR! ' + shots + '/' + lim + '手 ' + lvT.toFixed(1) + 's RANK ' + lastGrade + ' / TOTAL ' + cum;
       } else {
-
         state = 'fail';
-
-        $('msg').textContent =
-
-          '手数切れ… Lv' + L + 'をやり直し (スコアF / 通算' + cum + ')';
-
-
+        $('msg').textContent = 'GAME OVER. Lv' + L + ' (RANK F / TOTAL ' + cum + ')';
       }
-
       saveGame();
-
     }
-
-
 
     let last = performance.now(), acc = 0, tr = 0;
-
-
-
     function loop(now) {
-
       const dt = Math.min(.05, (now - last) / 1000);
-
       last = now;
-
-
-
       if (state === 'fly') {
-
         acc += dt * mult;
-
-
-
         while (acc >= DT && state === 'fly') {
-
           const pend = [];
-
-
-
           for (const b of balls) step(b, DT, true, pend);
-
           collideBalls();
-
-
-
           for (const [b] of pend) hatena(b);
-
-
-
           balls = balls.filter(b => !b.lost);
-
           tickFx(DT);
-
-          lvT += DT;
-
-          totT += DT;
-
-          acc -= DT;
-
-          tr += DT;
-
-
+          lvT += DT; totT += DT; acc -= DT; tr += DT;
 
           if (tr > .03) {
-
             tr = 0;
-
             for (const b of balls) trail.push([b.x, b.y, b.col]);
-
             if (trail.length > 240) trail.splice(0, trail.length - 240);
-
           }
-
-
-
-          if (blocks.every(k => !k.alive)) {
-
-            endShot('clear');
-
-            break;
-
-          }
-
-
-
-          if (!balls.length) {
-
-            endShot('lost');
-
-            break;
-
-          }
-
+          if (blocks.every(k => !k.alive)) { endShot('clear'); break; }
+          if (!balls.length) { endShot('lost'); break; }
         }
-
-
-
         syncUI();
-
       }
-
-
-
       draw();
-
       requestAnimationFrame(loop);
-
     }
-
-
-
-    // ドラッグ中は、設定された初速度を使って予測軌道を描く
 
     function preview() {
-
-      const T = BALLS[ballType];
-
-      const a = launchAngle();
-
-      const speed = dragging && launchSpeed > 0 ? launchSpeed : V0;
-
-
-
-      const b = {
-
-        x: aim.x,
-
-        y: aim.y,
-
-        vx: speed * Math.cos(a),
-
-        vy: speed * Math.sin(a),
-
-        e: T.e,
-
-        M: T.M
-
-      };
-
-
-
+      const T = BALLS[ballType], a = launchAngle(), speed = dragging && launchSpeed > 0 ? launchSpeed : V0;
+      const b = { x: aim.x, y: aim.y, vx: speed * Math.cos(a), vy: speed * Math.sin(a), e: T.e, M: T.M };
       const pts = [];
-
-
-
       for (let i = 0; i < 900 && !b.lost; i++) {
-
         step(b, DT * 2, false, []);
-
         if (i % 12 === 0) pts.push([b.x, b.y]);
-
       }
-
-
-
       return pts;
-
     }
-
-
 
     function draw() {
-
       const tt0 = performance.now() / 1000;
-
-      const sh = fx.dopa > 0
-
-        ? Math.pow(Math.max(0, Math.sin(tt0 * .9)), 3) * Math.sin(tt0 * 45) * 10
-
-        : 0;
-
-
-
+      const sh = fx.dopa > 0 ? Math.pow(Math.max(0, Math.sin(tt0 * .9)), 3) * Math.sin(tt0 * 45) * 10 : 0;
       ctx.setTransform(dpr, 0, 0, dpr, sh * dpr, 0);
 
-
-
-      const paper = css('--paper');
-
+      const paper = css('--surface');
       const ink = css('--ink');
-
       const grid = css('--grid');
-
       const accColor = css('--acc');
-
-
+      const borderCol = css('--border');
 
       ctx.fillStyle = paper;
-
       ctx.fillRect(0, 0, CW, CH);
-
-
-
       ctx.save();
 
-
-
       {
-
         const cx = ML + FW / 2, cy = MT + FW / 2;
-
         const k = 1 / (Math.abs(Math.cos(tilt)) + Math.abs(Math.sin(tilt)));
-
         ctx.translate(cx, cy);
-
         ctx.rotate(-tilt);
-
         ctx.scale(k, k);
-
         ctx.translate(-cx, -cy);
-
       }
 
-
-
-      ctx.font = '12px "Zen Kurenaido",sans-serif';
-
+      ctx.font = 'bold 12px "Oswald", "Noto Sans JP", sans-serif';
       ctx.textBaseline = 'middle';
 
-
-
       const stp = Math.max(1, Math.ceil(N / 6));
-
-
-
       ctx.lineWidth = 1;
-
       ctx.strokeStyle = grid;
-
-
+      ctx.globalAlpha = .65;
 
       for (let k = 0; k <= N; k += stp) {
-
         ctx.beginPath();
-
         ctx.moveTo(tx(k * g), ty(0));
-
         ctx.lineTo(tx(k * g), ty(H));
-
         ctx.stroke();
-
-
-
         ctx.beginPath();
-
         ctx.moveTo(tx(0), ty(k * g));
-
         ctx.lineTo(tx(W), ty(k * g));
-
         ctx.stroke();
-
       }
-
-
-
-      ctx.fillStyle = ink;
-
-
-
-      for (let k = stp; k <= N; k += stp) {
-
-        ctx.textAlign = 'right';
-
-        ctx.fillText(k + 'g', ML - 4, ty(k * g));
-
-
-
-        ctx.textAlign = 'center';
-
-        ctx.fillText(k + 'g', tx(k * g), ty(0) + 13);
-
-      }
-
-
-
-      ctx.strokeStyle = ink;
-
-      ctx.lineCap = 'butt';
-
-
-
-      const seg = (x1, y1, x2, y2, e, dash) => {
-
-        ctx.lineWidth = 1 + 3 * e;
-
-        ctx.setLineDash(dash ? [6, 5] : []);
-
-        ctx.beginPath();
-
-        ctx.moveTo(tx(x1), ty(y1));
-
-        ctx.lineTo(tx(x2), ty(y2));
-
-        ctx.stroke();
-
-        ctx.setLineDash([]);
-
-      };
-
-
-
-      seg(0, 0, 0, H, wl.l);
-
-      seg(W, 0, W, H, wl.r);
-
-      seg(0, H, W, H, wl.c);
-
-
-
-      if (wl.f > 0) seg(0, 0, W, 0, wl.f);
-
-      else if (fx.dopa > 0) seg(0, 0, W, 0, 2);
-
-      else seg(0, 0, W, 0, .3, true);
-
-
-
-      for (const b of blocks) {
-
-        if (!b.alive) continue;
-
-
-
-        const rem = Math.max(0, 1 - b.imp / b.th);
-
-        const x = tx(b.x);
-
-        const y = ty(b.y + b.h);
-
-        const w = b.w * S;
-
-        const h = b.h * S;
-
-
-
-        if (w < 24) {
-
-          ctx.globalAlpha = .3 + .7 * rem;
-
-          ctx.fillStyle = b.e === 2 ? accColor : b.e === .5 ? grid : ink;
-
-          ctx.fillRect(x, y, w, h);
-
-          ctx.globalAlpha = 1;
-
-          ctx.strokeStyle = paper;
-
-          ctx.lineWidth = .8;
-
-          ctx.strokeRect(x, y, w, h);
-
-
-
-          if (b.hat) {
-
-            ctx.fillStyle = accColor;
-
-            ctx.fillRect(x + w * .3, y + h * .3, w * .4, h * .4);
-
-          }
-
-
-
-          continue;
-
-        }
-
-
-
-        ctx.save();
-
-        ctx.globalAlpha = .3 + .7 * rem;
-
-        ctx.beginPath();
-
-        ctx.rect(x, y, w, h);
-
-        ctx.clip();
-
-
-
-        const dark = b.e !== .5;
-
-        const two = b.e === 2;
-
-
-
-        ctx.fillStyle = two ? accColor : dark ? ink : paper;
-
-        ctx.fillRect(x, y, w, h);
-
-        ctx.strokeStyle = dark ? paper : ink;
-
-        ctx.lineWidth = 1.2;
-
-
-
-        const sp = Math.max(3, Math.min(dark ? 6 : 9, w / 5));
-
-
-
-        ctx.beginPath();
-
-
-
-        for (let k = -h; k < w + h; k += sp) {
-
-          ctx.moveTo(x + k, y);
-
-          ctx.lineTo(x + k + h, y + h);
-
-        }
-
-
-
-        if (dark) {
-
-          for (let k = -h; k < w + h; k += sp) {
-
-            ctx.moveTo(x + k + h, y);
-
-            ctx.lineTo(x + k, y + h);
-
-          }
-
-        }
-
-
-
-        ctx.stroke();
-
-        ctx.restore();
-
-
-
-        ctx.strokeStyle = ink;
-
-        ctx.lineWidth = 1.5;
-
-        ctx.strokeRect(x, y, w, h);
-
-        ctx.textAlign = 'center';
-
-
-
-        if (b.hat || w >= 60) {
-
-          const lab = b.hat ? '?' : 'e=' + b.e + ' 残' + Math.round(rem * 100) + '%';
-
-
-
-          ctx.font = (b.hat
-
-            ? 'bold ' + Math.max(10, Math.min(h * .8, 22))
-
-            : '12') + 'px "Zen Kurenaido",sans-serif';
-
-
-
-          const tw = ctx.measureText(lab).width + (b.hat ? 8 : 10);
-
-
-
-          ctx.fillStyle = paper;
-
-          ctx.fillRect(
-
-            x + w / 2 - tw / 2,
-
-            y + h / 2 - Math.min(9, h / 2),
-
-            tw,
-
-            Math.min(18, h)
-
-          );
-
-
-
-          ctx.fillStyle = b.hat ? accColor : ink;
-
-          ctx.fillText(lab, x + w / 2, y + h / 2);
-
-          ctx.font = '12px "Zen Kurenaido",sans-serif';
-
-        }
-
-      }
-
-
-
-      // 予測軌道とモンスト風の矢印
-
-      if (state === 'aim') {
-
-        ctx.fillStyle = accColor;
-
-
-
-        for (const p of preview()) {
-
-          ctx.beginPath();
-
-          ctx.arc(tx(p[0]), ty(p[1]), 1.6, 0, Math.PI * 2);
-
-          ctx.fill();
-
-        }
-
-
-
-        const a = launchAngle();
-
-        const ox = tx(aim.x);
-
-        const oy = ty(aim.y);
-
-
-
-        if (dragging && dragPoint && pullDistance > .1) {
-
-          // 引っ張る距離に応じて矢印の長さを調整
-
-          const arrowLen = MAX_ARROW_LENGTH * (launchSpeed / MAX_LAUNCH_SPEED);
-
-          const dx = Math.cos(a) * arrowLen;
-
-          const dy = Math.sin(a) * arrowLen;
-
-
-
-          const ex = tx(aim.x + dx);
-
-          const ey = ty(aim.y + dy);
-
-
-
-          // X成分：横方向
-
-          drawArrow(ox, oy, ex, oy, '#e74c3c', 3);
-
-
-
-          // Y成分：縦方向
-
-          drawArrow(ex, oy, ex, ey, '#3498db', 3);
-
-
-
-          // 合成ベクトル：斜め方向
-
-          drawArrow(ox, oy, ex, ey, '#27ae60', 4);
-
-
-
-          ctx.font = 'bold 12px sans-serif';
-
-          ctx.textAlign = 'left';
-
-
-
-          // X成分ラベル
-
-          ctx.fillStyle = '#e74c3c';
-
-          ctx.fillText('Vx', (ox + ex) / 2, oy + 15);
-
-
-
-          // Y成分ラベル
-
-          ctx.fillStyle = '#3498db';
-
-          ctx.fillText('Vy', ex + 5, (oy + ey) / 2);
-
-
-
-          // 合成速度ラベル
-
-          ctx.fillStyle = '#27ae60';
-
-          ctx.fillText(
-
-            'v=' + launchSpeed.toFixed(1) + '/' + MAX_LAUNCH_SPEED,
-
-            ox + (ex - ox) * .45,
-
-            oy + (ey - oy) * .45 - 8
-
-          );
-
-
-
-          // 角度と引っ張り距離
-
-          ctx.fillStyle = ink;
-
-          ctx.fillText(
-
-            'θ=' + (dragAngle * 180 / Math.PI).toFixed(0) + '°',
-
-            ox + 8,
-
-            oy - 18
-
-          );
-
-
-
-          ctx.fillText(
-
-            '引く距離 ' + pullDistance.toFixed(1),
-
-            ox + 8,
-
-            oy - 33
-
-          );
-
-        } else {
-
-          // ドラッグしていないときは発射方向を表示
-
-          const al = Math.max(5, 26 / S);
-
-
-
-          drawArrow(
-
-            ox,
-
-            oy,
-
-            tx(aim.x + al * Math.cos(a)),
-
-            ty(aim.y + al * Math.sin(a)),
-
-            accColor,
-
-            2
-
-          );
-
-        }
-
-      }
-
-
-
-      ctx.globalAlpha = .45;
-
-
-
-      for (const p of trail) {
-
-        ctx.fillStyle = p[2];
-
-        ctx.beginPath();
-
-        ctx.arc(tx(p[0]), ty(p[1]), 1.8, 0, Math.PI * 2);
-
-        ctx.fill();
-
-      }
-
-
-
       ctx.globalAlpha = 1;
 
-
-
-      const rr = Math.max(R * S, 4);
-
-      const list = state === 'fly'
-
-        ? balls
-
-        : [{ x: aim.x, y: aim.y, col: BALLS[ballType].col }];
-
-
-
-      for (const b of list) {
-
-        ctx.fillStyle = b.col;
-
+      ctx.strokeStyle = ink;
+      ctx.lineCap = 'square';
+      const seg = (x1, y1, x2, y2, e, dash) => {
+        ctx.lineWidth = Math.max(2, 1 + 4 * e);
+        ctx.setLineDash(dash ? [8, 8] : []);
         ctx.beginPath();
-
-        ctx.arc(tx(b.x), ty(b.y), rr, 0, Math.PI * 2);
-
-        ctx.fill();
-
-        ctx.strokeStyle = ink;
-
-        ctx.lineWidth = 1.5;
-
+        ctx.moveTo(tx(x1), ty(y1));
+        ctx.lineTo(tx(x2), ty(y2));
         ctx.stroke();
+        ctx.setLineDash([]);
+      };
 
+      seg(0, 0, 0, H, wl.l);
+      seg(W, 0, W, H, wl.r);
+      seg(0, H, W, H, wl.c);
+
+      if (wl.f > 0) seg(0, 0, W, 0, wl.f);
+      else if (fx.dopa > 0) seg(0, 0, W, 0, 2);
+      else seg(0, 0, W, 0, .3, true);
+
+      for (const b of blocks) {
+        if (!b.alive) continue;
+        const rem = Math.max(0, 1 - b.imp / b.th);
+        const x = tx(b.x);
+        const y = ty(b.y + b.h);
+        const w = b.w * S;
+        const h = b.h * S;
+        const dark = b.e !== .5;
+        const fill = b.hat || b.e === 2 ? accColor : b.e === .5 ? paper : ink;
+
+        ctx.save();
+        ctx.globalAlpha = .35 + .65 * rem;
+        ctx.fillStyle = fill;
+        ctx.fillRect(x, y, w, h);
+        // 元の斜線パターンを維持しつつ、間隔を広げて文字を読みやすくする
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.clip();
+        ctx.strokeStyle = dark ? paper : ink;
+        ctx.lineWidth = 1.5;
+        const spacing = Math.max(9, Math.min(14, w / 4));
+        for (let k = -h; k < w + h; k += spacing) {
+          ctx.beginPath();
+          ctx.moveTo(x + k, y + h);
+          ctx.lineTo(x + k + h, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = borderCol;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, y, w, h);
+
+        if (b.hat || w >= 45) {
+          const label = b.hat ? '?' : 'e=' + b.e + '  ' + Math.round(rem * 100) + '%';
+          ctx.font = '900 11px "Noto Sans JP", sans-serif';
+          ctx.textAlign = 'center';
+          const tw = ctx.measureText(label).width + 8;
+          ctx.fillStyle = borderCol;
+          ctx.fillRect(x + w / 2 - tw / 2, y + h / 2 - 8, tw, 16);
+          ctx.fillStyle = paper;
+          ctx.fillText(label, x + w / 2, y + h / 2);
+        }
       }
 
-
-
-      ctx.fillStyle = ink;
-
-      ctx.textAlign = 'left';
-
-      ctx.fillText('y[m]', 2, MT + 8);
-
-      ctx.textAlign = 'right';
-
-      ctx.fillText('x[m]', CW - 2, ty(0) + 13);
-
-
-
-      ctx.restore();
-
-
-
-      ctx.strokeStyle = ink;
-
-      ctx.fillStyle = ink;
-
-      ctx.lineWidth = 2;
-
-      ctx.beginPath();
-
-      ctx.moveTo(CW - 22, 14);
-
-      ctx.lineTo(CW - 22, 36);
-
-      ctx.moveTo(CW - 27, 30);
-
-      ctx.lineTo(CW - 22, 37);
-
-      ctx.lineTo(CW - 17, 30);
-
-      ctx.stroke();
-
-      ctx.textAlign = 'right';
-
-      ctx.fillText('g', CW - 30, 22);
-
-
-
-      if (fx.dopa > 0) {
-
-        const tt = performance.now() / 1000;
-
-        const gr = ctx.createLinearGradient(0, 0, CW, CH);
-
-
-
-        for (let i = 0; i <= 6; i++) {
-
-          gr.addColorStop(i / 6, 'hsl(' + ((i * 60 + tt * 200) % 360) + ',100%,55%)');
-
+      if (state === 'aim') {
+        const pts = preview();
+        if (pts.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(tx(pts[0][0]), ty(pts[0][1]));
+          for (let i = 1; i < pts.length; i++) ctx.lineTo(tx(pts[i][0]), ty(pts[i][1]));
+          ctx.strokeStyle = accColor;
+          ctx.lineWidth = 2;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.globalAlpha = .8;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
         }
 
+        const a = launchAngle();
+        const ox = tx(aim.x);
+        const oy = ty(aim.y);
 
+        if (dragging && dragPoint && pullDistance > .1) {
+          const arrowLen = MAX_ARROW_LENGTH * (launchSpeed / MAX_LAUNCH_SPEED);
+          const dx = Math.cos(a) * arrowLen;
+          const dy = Math.sin(a) * arrowLen;
+          const ex = tx(aim.x + dx);
+          const ey = ty(aim.y + dy);
 
-        ctx.globalAlpha = .3;
+          drawArrow(ox, oy, ex, oy, '#e74c3c', 4);
+          drawArrow(ex, oy, ex, ey, '#3498db', 4);
+          drawArrow(ox, oy, ex, ey, '#27ae60', 5);
 
+          ctx.font = '900 14px "Oswald", sans-serif';
+          ctx.textAlign = 'left';
+
+          // Shadow text for pop
+          const drawText = (txt, x, y, color) => {
+            ctx.fillStyle = borderCol; ctx.fillText(txt, x + 1, y + 1);
+            ctx.fillStyle = color; ctx.fillText(txt, x, y);
+          }
+          drawText('Vx', (ox + ex) / 2, oy + 18, '#e74c3c');
+          drawText('Vy', ex + 8, (oy + ey) / 2, '#3498db');
+          drawText('V=' + launchSpeed.toFixed(1) + '/' + MAX_LAUNCH_SPEED, ox + (ex - ox) * .45, oy + (ey - oy) * .45 - 10, '#27ae60');
+          drawText('A=' + (dragAngle * 180 / Math.PI).toFixed(0) + '°', ox + 10, oy - 20, ink);
+          drawText('PULL ' + pullDistance.toFixed(1), ox + 10, oy - 38, ink);
+        } else {
+          const al = Math.max(5, 26 / S);
+          drawArrow(ox, oy, tx(aim.x + al * Math.cos(a)), ty(aim.y + al * Math.sin(a)), accColor, 4);
+        }
+      }
+
+      ctx.globalAlpha = .55;
+      for (const p of trail) {
+        ctx.fillStyle = p[2];
+        ctx.beginPath();
+        ctx.arc(tx(p[0]), ty(p[1]), 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      const rr = Math.max(R * S, 4);
+      const list = state === 'fly' ? balls : [{ x: aim.x, y: aim.y, col: BALLS[ballType].col }];
+      for (const b of list) {
+        ctx.fillStyle = b.col;
+        const bx = tx(b.x), by = ty(b.y);
+        ctx.beginPath();
+        ctx.arc(bx, by, rr, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = borderCol;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = ink;
+      ctx.textAlign = 'left';
+      ctx.font = '900 12px "Oswald", sans-serif';
+      ctx.fillText('Y[m]', 6, MT + 10);
+      ctx.textAlign = 'right';
+      ctx.fillText('X[m]', CW - 6, ty(0) + 14);
+      ctx.restore();
+
+      ctx.strokeStyle = borderCol;
+      ctx.fillStyle = ink;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(CW - 24, 14);
+      ctx.lineTo(CW - 24, 36);
+      ctx.moveTo(CW - 30, 30);
+      ctx.lineTo(CW - 24, 38);
+      ctx.lineTo(CW - 18, 30);
+      ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.font = '900 14px "Oswald", sans-serif';
+      ctx.fillText('g', CW - 34, 24);
+
+      if (fx.dopa > 0) {
+        const tt = performance.now() / 1000;
+        const gr = ctx.createLinearGradient(0, 0, CW, CH);
+        for (let i = 0; i <= 6; i++) {
+          gr.addColorStop(i / 6, 'hsl(' + ((i * 60 + tt * 300) % 360) + ',100%,50%)');
+        }
+        ctx.globalAlpha = .25;
         ctx.fillStyle = gr;
-
         ctx.fillRect(0, 0, CW, CH);
-
         ctx.globalAlpha = 1;
 
-
-
-        ctx.font = 'bold ' + (54 + 6 * Math.sin(tt * 14)) + 'px "Zen Kurenaido",sans-serif';
-
+        ctx.font = '900 ' + (50 + 10 * Math.sin(tt * 20)) + 'px "Noto Sans JP", sans-serif';
         ctx.textAlign = 'center';
-
-        ctx.textJoin = 'round';
-
-        ctx.lineWidth = 8;
-
+        ctx.lineWidth = 10;
         ctx.strokeStyle = '#000';
-
-        ctx.strokeText('ドパガキモード', CW / 2, CH * .2);
-
+        ctx.strokeText('ドパガキモード', CW / 2, CH * .3);
         ctx.fillStyle = gr;
+        ctx.fillText('ドパガキモード', CW / 2, CH * .3);
 
-        ctx.fillText('ドパガキモード', CW / 2, CH * .2);
-
-
-
-        ctx.font = 'bold 22px "Zen Kurenaido",sans-serif';
-
-        ctx.lineWidth = 4;
-
-
-
-        const rt = '残り ' + fx.dopa.toFixed(1) + ' 秒';
-
-
-
-        ctx.strokeText(rt, CW / 2, CH * .2 + 44);
-
+        ctx.font = '900 24px "Oswald", sans-serif';
+        ctx.lineWidth = 6;
+        const rt = 'REMAINING ' + fx.dopa.toFixed(1) + ' SEC';
+        ctx.strokeText(rt, CW / 2, CH * .3 + 50);
         ctx.fillStyle = '#fff';
-
-        ctx.fillText(rt, CW / 2, CH * .2 + 44);
-
+        ctx.fillText(rt, CW / 2, CH * .3 + 50);
       }
 
-
-
-      cv.style.boxShadow = fx.dopa > 0
-
-        ? '0 0 28px 8px hsl(' + ((performance.now() / 5) % 360) + ',100%,60%)'
-
-        : 'none';
-
+      if (fx.dopa > 0) {
+        cv.style.boxShadow = '10px 10px 0 hsl(' + ((performance.now() / 3) % 360) + ',100%,50%)';
+        cv.style.borderColor = 'hsl(' + ((performance.now() / 3) % 360) + ',100%,50%)';
+      } else {
+        cv.style.boxShadow = '10px 10px 0 var(--shadow-color)';
+        cv.style.borderColor = 'var(--border)';
+      }
     }
-
-
 
     function syncUI() {
-
       $('speedValue').textContent = mult + '倍';
-
-
-
+      $('hudLevelValue').textContent = L;
+      $('hudAmmoValue').textContent = Math.max(0, lim - shots);
+      $('hudAmmoMax').textContent = lim;
+      $('hudAmmo').classList.toggle('low-ammo', lim - shots <= 1);
       const f = [];
-
-
-
       if (fx.mass > 0) f.push('質量×2 ' + fx.mass.toFixed(1) + 's');
-
       if (fx.grav > 0) f.push('重力×2 ' + fx.grav.toFixed(1) + 's');
-
       if (fx.zero > 0) f.push('無重力 ' + fx.zero.toFixed(1) + 's');
-
       if (fx.inert > 0) f.push('慣性系 ' + (fx.ix > 0 ? '→' : '←') + fx.inert.toFixed(1) + 's');
-
       if (fx.dopa > 0) f.push('ドパガキ ' + fx.dopa.toFixed(1) + 's');
-
-      if (performance.now() - toastAt < 3500) f.unshift('★' + toast);
-
-
-
-      $('fx').textContent = f.join('  ');
-
-
+      if (fx.flick > 0) f.push('フリック投げ：指を投げたい方向へスワイプ（次の1投）');
+      if (performance.now() - toastAt < 3500) f.unshift('! ' + toast);
+      $('fx').textContent = f.join(' // ');
 
       const cum = sumL ? gradeOf(sumS / sumL) : '-';
-
       const w = x => x > 0 ? x : 'なし';
 
-
-
       $('info').innerHTML = [
-
-        'Lv ' + L + (L >= 99 ? ' (最終)' : ''),
-
-        '手数 ' + shots + ' / ' + lim,
-
-        '今回 ' + lvT.toFixed(1) + ' 秒',
-
-        '累積 ' + totS + '手 ' + totT.toFixed(0) + '秒',
-
-        'スコア ' + lastGrade + ' / 通算 ' + cum,
-
-        'ブロック残 ' + blocks.filter(k => k.alive).length,
-
-        '壁e 左' + wl.l + ' 右' + wl.r + ' 天' + wl.c,
-
-        '床e ' + w(wl.f),
-
-        '発射位置 (' + aim.x.toFixed(1) + ', ' + aim.y.toFixed(1) + ')',
-
-        '傾き ' + (tilt * 180 / Math.PI).toFixed(0) + '°'
-
-      ].concat(L >= 43 ? ['ド○ゴンボール使用 ' + dUses + '/7'] : [])
-
+        'LV ' + L + (L >= 99 ? ' (FINAL)' : ''),
+        'SHOT ' + shots + ' / ' + lim,
+        'TIME ' + lvT.toFixed(1) + ' s',
+        'TOTAL ' + totS + ' SHOT / ' + totT.toFixed(0) + ' s',
+        'RANK ' + lastGrade + ' (T: ' + cum + ')',
+        'BLOCKS ' + blocks.filter(k => k.alive).length,
+        'WALL L' + wl.l + ' / R' + wl.r + ' / T' + wl.c,
+        'FLOOR ' + w(wl.f),
+        'POS (' + aim.x.toFixed(1) + ', ' + aim.y.toFixed(1) + ')',
+        'TILT ' + (tilt * 180 / Math.PI).toFixed(0) + '°'
+      ].concat(L >= 43 ? ['D-BALL ' + dUses + '/7'] : [])
         .map(s => '<span>' + s + '</span>').join('');
-
-
-
-
     }
-
-
 
     function toField(e) {
-
       const r = cv.getBoundingClientRect();
-
       const q = CW / r.width;
-
       const cx = ML + FW / 2, cy = MT + FW / 2;
-
       const kk = 1 / (Math.abs(Math.cos(tilt)) + Math.abs(Math.sin(tilt)));
-
-
-
       const dx = (e.clientX - r.left) * q - cx;
-
       const dy = (e.clientY - r.top) * q - cy;
-
       const c = Math.cos(tilt), s = Math.sin(tilt);
-
       const rx = (dx * c - dy * s) / kk + cx;
-
       const ry = (dx * s + dy * c) / kk + cy;
-
-
-
       return { x: (rx - ML) / S, y: H - (ry - MT) / S };
-
     }
 
-
-
-    const KEY = 'mechBreakout.v1';
-
-
+    const KEY = 'mechBreakout.v2.brutalist';
 
     function saveGame() {
-
       try {
-
         localStorage.setItem(KEY, JSON.stringify({
-
           L, seed, wl, tilt, cols, rows, blocks, shots, lvT, totT, totS, sumS, sumL,
-
           lastGrade, dUses, ballType, failStreak, aim, ang: dragAngle * 180 / Math.PI,
-
           state: state === 'fly' ? 'aim' : state,
-
           msg: $('msg').textContent
-
         }));
-
       } catch (e) { }
-
     }
-
-
 
     function loadGame() {
-
       try {
-
         const d = JSON.parse(localStorage.getItem(KEY) || 'null');
-
-
-
         if (!d || !(d.L >= 1) || !d.blocks || !d.wl || !d.aim) return false;
-
-
-
-        ({
-
-          L, seed, wl, tilt, cols, rows, blocks, shots, lvT, totT, totS,
-
-          sumS, sumL, lastGrade, dUses, ballType, failStreak, aim
-
-        } = d);
-
-
-
+        ({ L, seed, wl, tilt, cols, rows, blocks, shots, lvT, totT, totS, sumS, sumL, lastGrade, dUses, ballType, failStreak, aim } = d);
         N = 6 + Math.floor((L - 1) / 2);
-
         W = H = N * g;
-
         S = FW / W;
-
         lim = 3 + Math.floor(L * .4);
-
-
-
-        balls = [];
-
-        trail = [];
-
-        fx = { mass: 0, grav: 0, zero: 0, dopa: 0, inert: 0, ix: 0 };
-
-        stillT = 0;
-
-        state = d.state || 'aim';
-
-
-
+        balls = []; trail = [];
+        fx = { mass: 0, grav: 0, zero: 0, dopa: 0, inert: 0, ix: 0, flick: 0 };
+        stillT = 0; state = d.state || 'aim';
         resetDrag();
-
         dragAngle = Number.isFinite(d.ang) ? d.ang * Math.PI / 180 : Math.PI / 3;
-
         $('msg').textContent = d.msg || '';
-
-
-
         buildBalls();
-
         syncUI();
-
-
-
         return true;
-
-      } catch (e) {
-
-        return false;
-
-      }
-
+      } catch (e) { return false; }
     }
 
-
-
-    // 盤面操作：ドラッグ発射、飛行中タップで停止、結果画面タップで次へ/再挑戦。
     let pointerStart = null;
     let pointerMoved = false;
     let pointerId = null;
@@ -2892,29 +1334,31 @@
     cv.addEventListener('pointerdown', e => {
       e.preventDefault();
       pointerId = e.pointerId;
-      pointerStart = { x: e.clientX, y: e.clientY, state };
+      pointerStart = {
+        x: e.clientX,
+        y: e.clientY,
+        state,
+        field: state === 'fly' ? toField(e) : null
+      };
       pointerMoved = false;
 
       if (state === 'aim') {
         const p = toField(e);
         const distance = Math.hypot(p.x - aim.x, p.y - aim.y);
-        if (distance <= 3.5 * R) {
-          dragging = true;
-          dragPoint = p;
-          pullDistance = 0;
-          launchSpeed = 0;
+        if (distance <= 4.0 * R) {
+          dragging = true; dragPoint = p; pullDistance = 0; launchSpeed = 0;
           cv.setPointerCapture(e.pointerId);
-          $('msg').textContent = '引っ張って、指を離すと発射';
+          $('msg').textContent = 'PULL AND RELEASE TO SHOOT';
           syncUI();
         } else {
           const inField = p.x >= R && p.x <= W - R && p.y >= R && p.y <= H - R;
           if (inField && !insideBlock(p.x, p.y)) {
             aim = { x: p.x, y: p.y };
-            $('msg').textContent = '発射位置を移動しました';
+            $('msg').textContent = 'POS MOVED';
             syncUI();
             saveGame();
           } else {
-            $('msg').textContent = 'ブロック外の場所を選んでください';
+            $('msg').textContent = 'CHOOSE EMPTY SPACE';
           }
         }
       }
@@ -2931,35 +1375,37 @@
       if (!pointerStart || (pointerId !== null && e.pointerId !== pointerId)) return;
       const startedState = pointerStart.state;
       const wasMoved = pointerMoved;
+      const tappedField = pointerStart.field;
       pointerStart = null;
       pointerId = null;
 
       if (dragging) {
         const shouldFire = pullDistance > 0.5;
-        if (shouldFire) {
-          fire();
-        } else {
-          resetDrag();
-          $('msg').textContent = 'もう少し引っ張ってください';
-          syncUI();
-          saveGame();
-        }
+        if (shouldFire) fire();
+        else { resetDrag(); $('msg').textContent = 'PULL MORE'; syncUI(); saveGame(); }
         return;
       }
-
-      // 飛行中・結果表示中の短いタップは、該当するボタンと同じ処理。
       if (!wasMoved && startedState === 'fly') {
-        // pointerdown時点で飛行中なら、結果画面へ遷移していても次ステージへ誤進行しない。
-        if (state === 'fly') endShot('');
+        if (state === 'fly') {
+          endShot('');
+          if (state === 'aim' && tappedField) {
+            // Canvasの余白がタップされても、ボールは盤面内に収める。
+            aim = {
+              x: Math.max(R, Math.min(W - R, tappedField.x)),
+              y: Math.max(R, Math.min(H - R, tappedField.y))
+            };
+            $('msg').textContent = 'TAP POSITION SET';
+            syncUI();
+            saveGame();
+          }
+        }
       } else if (!wasMoved && startedState !== 'aim' && state === startedState) {
         handleCanvasAction();
       }
     }
 
     function cancelPointer() {
-      pointerStart = null;
-      pointerId = null;
-      pointerMoved = false;
+      pointerStart = null; pointerId = null; pointerMoved = false;
       if (dragging) { resetDrag(); syncUI(); }
     }
 
@@ -2972,81 +1418,27 @@
     });
 
     function fullReset() {
-
-      failStreak = 0;
-
-      L = 1;
-
-      seed = Math.floor(Math.random() * 1e6);
-
-      totT = 0;
-
-      totS = 0;
-
-      sumS = 0;
-
-      sumL = 0;
-
-      lastGrade = '-';
-
-      dUses = 0;
-
-      ballType = 0;
-
+      failStreak = 0; L = 1; seed = Math.floor(Math.random() * 1e6);
+      totT = 0; totS = 0; sumS = 0; sumL = 0; lastGrade = '-';
+      dUses = 0; ballType = 0;
       setup();
-
     }
 
-
-
     let rc = 0;
-
-
-
     $('reset').onclick = () => {
-
       if (rc) {
-
-        clearTimeout(rc);
-
-        rc = 0;
-
+        clearTimeout(rc); rc = 0;
         $('reset').textContent = '最初から';
-
         fullReset();
-
         return;
-
       }
-
-
-
       $('reset').textContent = '本当に初期化?もう一度タップ';
-
-
-
-      rc = setTimeout(() => {
-
-        rc = 0;
-
-        $('reset').textContent = '最初から';
-
-      }, 4000);
-
+      rc = setTimeout(() => { rc = 0; $('reset').textContent = '最初から'; }, 4000);
     };
 
-
-
     if (!loadGame()) fullReset();
-
-
-
     requestAnimationFrame(loop);
-
   </script>
-
 </body>
-
-
 
 </html>
